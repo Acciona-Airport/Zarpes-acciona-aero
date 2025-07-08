@@ -1,226 +1,120 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Buscador de Trabajadores - Zarpes Acciona</title>
   <style>
-    :root {
-      --primary: #2c3e50;
-      --secondary: #3498db;
-      --light: #ecf0f1;
-      --danger: #e74c3c;
-      --success: #27ae60;
+    /* [Mantén todos tus estilos CSS existentes] */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
     }
-    
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      line-height: 1.6;
-      background-color: #f5f7fa;
-      color: #333;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
+    .data-table th {
+      background-color: #f2f2f2;
+      text-align: left;
+      padding: 10px;
+      border: 1px solid #ddd;
     }
-    
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-      padding: 20px;
-      background-color: var(--primary);
-      color: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    .data-table td {
+      padding: 10px;
+      border: 1px solid #ddd;
     }
-    
-    .search-container {
-      background: white;
-      padding: 25px;
-      border-radius: 8px;
-      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-      margin-bottom: 30px;
-    }
-    
-    .search-box {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-    
-    #rutInput {
-      flex: 1;
-      padding: 12px 15px;
-      border: 2px solid #ddd;
-      border-radius: 6px;
-      font-size: 16px;
-      transition: border-color 0.3s;
-    }
-    
-    #rutInput:focus {
-      border-color: var(--secondary);
-      outline: none;
-    }
-    
-    #searchButton {
-      background-color: var(--secondary);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 600;
-      transition: background-color 0.3s;
-    }
-    
-    #searchButton:hover {
-      background-color: #2980b9;
-    }
-    
-    .result-container {
-      background: white;
-      padding: 25px;
-      border-radius: 8px;
-      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-      display: none;
-    }
-    
-    .result-title {
-      color: var(--primary);
-      margin-top: 0;
-      border-bottom: 2px solid var(--light);
-      padding-bottom: 10px;
-    }
-    
-    .data-row {
-      display: flex;
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #eee;
-    }
-    
-    .data-label {
-      font-weight: 600;
-      color: var(--primary);
-      min-width: 150px;
-    }
-    
-    .loading {
-      text-align: center;
-      padding: 20px;
-      color: var(--secondary);
-    }
-    
-    .error {
-      color: var(--danger);
-      padding: 15px;
-      background-color: #fdecea;
-      border-radius: 6px;
-      border-left: 4px solid var(--danger);
-    }
-    
-    .success {
-      color: var(--success);
-    }
-    
-    .instructions {
-      background-color: #f8f9fa;
-      padding: 15px;
-      border-radius: 6px;
-      margin-top: 20px;
-      font-size: 14px;
+    .debug-info {
+      font-size: 12px;
       color: #666;
-    }
-    
-    @media (max-width: 600px) {
-      .search-box {
-        flex-direction: column;
-      }
-      
-      #searchButton {
-        width: 100%;
-      }
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Buscador de Trabajadores</h1>
-    <p>Zarpes Acciona Aero</p>
-  </div>
-  
-  <div class="search-container">
-    <h2>Consulta de Datos</h2>
-    <p>Ingrese el RUT del trabajador (con o sin puntos ni guión):</p>
-    
-    <div class="search-box">
-      <input type="text" id="rutInput" placeholder="Ej: 12345678-9 o 123456789">
-      <button id="searchButton" onclick="buscarDatos()">Buscar</button>
-    </div>
-    
-    <div class="instructions">
-      <p><strong>Instrucciones:</strong> Ingrese el RUT del trabajador y presione Buscar. El sistema mostrará automáticamente los datos asociados.</p>
-    </div>
-  </div>
+  <!-- [Mantén todo tu HTML existente hasta el div#datosTrabajador] -->
   
   <div class="result-container" id="resultado">
     <h3 class="result-title">Resultados de la Búsqueda</h3>
-    <div id="datosTrabajador">
-      <!-- Los datos se cargarán aquí dinámicamente -->
-    </div>
+    <div id="datosTrabajador"></div>
+    <div id="debugInfo" class="debug-info" style="display: none;"></div>
   </div>
 
   <script>
-    // URL de tu Apps Script publicado
     const scriptUrl = "https://script.google.com/macros/s/AKfycbzSRW6kNQtezGcQr-rU1YDc8Qxc9YuX0o2lQq7yPWSvooiFXGiap1LnPD1nBvREeDe0_w/exec";
     
     function buscarDatos() {
       const rut = document.getElementById('rutInput').value.trim();
       const resultadoDiv = document.getElementById('resultado');
       const datosDiv = document.getElementById('datosTrabajador');
+      const debugDiv = document.getElementById('debugInfo');
       
-      if (!rut) {
-        alert("Por favor ingrese un RUT válido");
+      // Validación del RUT
+      if (!rut || rut.length < 8) {
+        resultadoDiv.style.display = "block";
+        datosDiv.innerHTML = '<div class="error">Por favor ingrese un RUT válido (mínimo 8 caracteres)</div>';
+        debugDiv.style.display = "none";
         return;
       }
       
-      // Mostrar estado de carga
       resultadoDiv.style.display = "block";
       datosDiv.innerHTML = '<div class="loading">Buscando información...</div>';
+      debugDiv.style.display = "none";
       
-      // Hacer la consulta a Google Sheets
-      fetch(`${scriptUrl}?rut=${encodeURIComponent(rut)}`)
+      // Construir URL con parámetros
+      const url = new URL(scriptUrl);
+      url.searchParams.append('rut', rut);
+      
+      // Configurar opciones de fetch
+      const fetchOptions = {
+        method: 'GET',
+        redirect: 'follow',
+        headers: {
+          'Accept': 'application/json'
+        }
+      };
+      
+      // Realizar la consulta
+      fetch(url, fetchOptions)
         .then(response => {
-          if (!response.ok) throw new Error("Error en la conexión");
+          if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
           return response.json();
         })
         .then(data => {
-          if (data.encontrado) {
+          console.log("Datos recibidos:", data);
+          
+          if (data.error) {
+            datosDiv.innerHTML = `<div class="error">${data.mensaje}</div>`;
+            debugDiv.innerHTML = `<p>Parámetros recibidos: ${JSON.stringify(data.parametrosRecibidos || 'Ninguno')}</p>`;
+            debugDiv.style.display = "block";
+          } else if (data.encontrado) {
             datosDiv.innerHTML = `
-              <div class="data-row">
-                <div class="data-label">RUT:</div>
-                <div>${data.datos.rut || 'No disponible'}</div>
-              </div>
-              <div class="data-row">
-                <div class="data-label">Nombre:</div>
-                <div>${data.datos.nombre || 'No disponible'}</div>
-              </div>
-              <div class="data-row">
-                <div class="data-label">Hora Término Turno:</div>
-                <div>${data.datos.horario || 'No disponible'}</div>
-              </div>
-              <div class="data-row">
-                <div class="data-label">Comuna:</div>
-                <div>${data.datos.comuna || 'No disponible'}</div>
-              </div>
+              <table class="data-table">
+                <tr><th>Número</th><td>${data.datos.numero || 'N/A'}</td></tr>
+                <tr><th>Fecha</th><td>${data.datos.fecha || 'N/A'}</td></tr>
+                <tr><th>BP</th><td>${data.datos.bp || 'N/A'}</td></tr>
+                <tr><th>BP con guión</th><td>${data.datos.bp_con_guion || 'N/A'}</td></tr>
+                <tr><th>Sección</th><td>${data.datos.seccion || 'N/A'}</td></tr>
+                <tr><th>Nombre</th><td>${data.datos.nombre || 'N/A'}</td></tr>
+                <tr><th>Hora Término</th><td>${data.datos.horario_termino || 'N/A'}</td></tr>
+                <tr><th>Comuna</th><td>${data.datos.comuna || 'N/A'}</td></tr>
+              </table>
             `;
           } else {
-            datosDiv.innerHTML = `<div class="error">${data.mensaje || 'RUT no encontrado en los registros'}</div>`;
+            datosDiv.innerHTML = `<div class="error">${data.mensaje}</div>`;
           }
         })
         .catch(error => {
-          datosDiv.innerHTML = `<div class="error">Error al conectar con el servidor. Por favor intente nuevamente.</div>`;
-          console.error("Error:", error);
+          console.error("Error en la solicitud:", error);
+          datosDiv.innerHTML = `
+            <div class="error">
+              Error al conectar con el servidor. Por favor intente nuevamente.
+              <br><small>${error.message}</small>
+            </div>`;
+          debugDiv.innerHTML = `
+            <p><strong>URL solicitada:</strong> ${url.toString()}</p>
+            <p><strong>Error:</strong> ${error.message}</p>`;
+          debugDiv.style.display = "block";
         });
     }
     
