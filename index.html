@@ -117,77 +117,67 @@
             const errorDiv = document.getElementById('errorMessage');
             const loadingDiv = document.getElementById('loading');
             
-            // ID de tu hoja de cálculo (extraído de la URL)
-            const spreadsheetId = '2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ';
+            // URL de tu hoja de cálculo publicada como HTML
+            const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pubhtml?gid=0&single=true';
             
-            // Cargamos la API de Google Sheets
-            const script = document.createElement('script');
-            script.src = 'https://apis.google.com/js/api.js';
-            script.onload = initClient;
-            document.body.appendChild(script);
+            // Variable para almacenar los datos
+            let sheetData = [];
             
-            let gapiClient;
-            let sheetData = null;
-            
-            function initClient() {
-                gapi.load('client', () => {
-                    gapi.client.init({
-                        'apiKey': 'AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY', // Clave API pública
-                        'discoveryDocs': ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-                    }).then(() => {
-                        gapiClient = gapi.client;
-                        loadSheetData(); // Cargamos los datos al iniciar
-                    }).catch(error => {
-                        console.error('Error al inicializar la API:', error);
-                        showError('Error al conectar con Google Sheets. Recarga la página.');
-                    });
-                });
-            }
+            // Cargamos los datos al iniciar
+            loadSheetData();
             
             function loadSheetData() {
                 loadingDiv.style.display = 'block';
                 
-                gapiClient.sheets.spreadsheets.values.get({
-                    spreadsheetId: spreadsheetId,
-                    range: 'Hoja1!A:J' // Asegúrate que el nombre de la hoja sea correcto
-                }).then(response => {
-                    const data = response.result.values;
-                    if (!data || data.length < 2) {
-                        throw new Error('No hay datos en la hoja');
-                    }
-                    
-                    // Procesamos y almacenamos los datos
-                    sheetData = processData(data);
-                }).catch(error => {
-                    console.error('Error:', error);
-                    showError('Error al cargar los datos. Intenta recargar la página.');
-                }).finally(() => {
-                    loadingDiv.style.display = 'none';
-                });
-            }
-            
-            function processData(data) {
-                const headers = data[0];
-                const rutIndex = headers.indexOf('RUT');
-                const nombreIndex = headers.indexOf('NOMBRE');
-                const horaIndex = headers.indexOf('HORA ESTIMADA TERMINO TURNO');
-                
-                if (rutIndex === -1 || nombreIndex === -1 || horaIndex === -1) {
-                    throw new Error('No se encontraron las columnas necesarias');
-                }
-                
-                const processedData = [];
-                for (let i = 1; i < data.length; i++) {
-                    if (data[i][rutIndex]) { // Solo agregamos filas con RUT
-                        processedData.push({
-                            rut: data[i][rutIndex],
-                            nombre: data[i][nombreIndex],
-                            hora: data[i][horaIndex]
-                        });
-                    }
-                }
-                
-                return processedData;
+                // Usamos un proxy CORS para evitar problemas
+                fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(sheetUrl)}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Error al cargar los datos');
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Parseamos el HTML
+                        const parser = new DOMParser();
+                        const htmlDoc = parser.parseFromString(data.contents, 'text/html');
+                        const tables = htmlDoc.getElementsByTagName('table');
+                        
+                        if (tables.length === 0) {
+                            throw new Error('No se encontró la tabla de datos');
+                        }
+                        
+                        // Procesamos la tabla
+                        const rows = tables[0].rows;
+                        const headers = Array.from(rows[0].cells).map(cell => cell.textContent.trim());
+                        
+                        // Identificamos las columnas necesarias
+                        const rutIndex = headers.indexOf('RUT');
+                        const nombreIndex = headers.indexOf('NOMBRE');
+                        const horaIndex = headers.indexOf('HORA ESTIMADA TERMINO TURNO');
+                        
+                        if (rutIndex === -1 || nombreIndex === -1 || horaIndex === -1) {
+                            throw new Error('No se encontraron las columnas necesarias');
+                        }
+                        
+                        // Extraemos los datos
+                        sheetData = [];
+                        for (let i = 1; i < rows.length; i++) {
+                            const cells = rows[i].cells;
+                            if (cells.length > Math.max(rutIndex, nombreIndex, horaIndex)) {
+                                sheetData.push({
+                                    rut: cells[rutIndex].textContent.trim(),
+                                    nombre: cells[nombreIndex].textContent.trim(),
+                                    hora: cells[horaIndex].textContent.trim()
+                                });
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showError('Error al cargar los datos. Recarga la página.');
+                    })
+                    .finally(() => {
+                        loadingDiv.style.display = 'none';
+                    });
             }
             
             searchButton.addEventListener('click', searchByRut);
@@ -210,8 +200,8 @@
                     return;
                 }
                 
-                if (!sheetData) {
-                    showError('Los datos no se han cargado. Espera un momento...');
+                if (sheetData.length === 0) {
+                    showError('Los datos no se han cargado. Intenta nuevamente.');
                     return;
                 }
                 
@@ -219,10 +209,10 @@
                 resultsDiv.style.display = 'none';
                 errorDiv.style.display = 'none';
                 
-                // Buscamos el RUT en los datos cargados
-                const resultado = sheetData.find(item => item.rut === rut);
-                
-                setTimeout(() => { // Pequeño retraso para mejor experiencia de usuario
+                // Pequeño retraso para mejor experiencia de usuario
+                setTimeout(() => {
+                    const resultado = sheetData.find(item => item.rut === rut);
+                    
                     if (resultado) {
                         document.getElementById('rutResult').textContent = resultado.rut;
                         document.getElementById('nombreResult').textContent = resultado.nombre;
@@ -231,6 +221,7 @@
                     } else {
                         showError('No se encontraron resultados para el RUT ingresado');
                     }
+                    
                     loadingDiv.style.display = 'none';
                 }, 300);
             }
