@@ -1,22 +1,47 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Buscador de Trabajadores</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f5f5f5;
+<script>
+  // URL de tu Apps Script publicado (REMPLAZAR CON TU URL)
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbzSRW6kNQtezGcQr-rU1YDc8Qxc9YuX0o2lQq7yPWSvooiFXGiap1LnPD1nBvREeDe0_w/exec"; 
+  
+  function buscarDatos() {
+    const rut = document.getElementById('rutInput').value.trim();
+    const resultadoDiv = document.getElementById('resultado');
+    const datosDiv = document.getElementById('datosTrabajador');
+    
+    if (!rut) {
+      alert("Por favor ingrese un RUT");
+      return;
     }
-    /* [Todo el resto del código CSS que te envié anteriormente] */
-  </style>
-</head>
-<body>
-  <!-- [Todo el código HTML del buscador] -->
-  <script>
-    // [Todo el código JavaScript que te envié]
-  </script>
-</body>
-</html>
+    
+    // Mostrar estado de carga
+    datosDiv.innerHTML = "<p>Buscando...</p>";
+    resultadoDiv.style.display = "block";
+    
+    // Hacer la consulta a Google Sheets
+    fetch(`${scriptUrl}?rut=${encodeURIComponent(rut)}`)
+      .then(response => {
+        if (!response.ok) throw new Error("Error en la red");
+        return response.json();
+      })
+      .then(data => {
+        if (data.encontrado) {
+          datosDiv.innerHTML = `
+            <div class="dato"><span class="etiqueta">RUT:</span> ${data.datos.rut}</div>
+            <div class="dato"><span class="etiqueta">Nombre:</span> ${data.datos.nombre}</div>
+            <div class="dato"><span class="etiqueta">Hora Término Turno:</span> ${data.datos.horario}</div>
+            <div class="dato"><span class="etiqueta">Comuna:</span> ${data.datos.comuna}</div>
+          `;
+        } else {
+          datosDiv.innerHTML = `<p class="error">${data.mensaje}</p>`;
+        }
+      })
+      .catch(error => {
+        datosDiv.innerHTML = `<p class="error">Error al conectar con el servidor</p>`;
+        console.error("Error:", error);
+      });
+  }
+  
+  // Buscar al presionar Enter
+  document.getElementById('rutInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') buscarDatos();
+  });
+</script>
