@@ -85,7 +85,7 @@
     <h1>Buscador por RUT</h1>
     
     <div class="search-container">
-        <input type="text" id="rutInput" placeholder="Ingrese RUT (ej: 6695361-0)" required>
+        <input type="text" id="rutInput" placeholder="Ingrese RUT (ej: 10842102-9)" required>
         <button id="searchButton">Buscar</button>
     </div>
     
@@ -117,8 +117,11 @@
             const errorDiv = document.getElementById('errorMessage');
             const loadingDiv = document.getElementById('loading');
             
-            // URL de tu Google Sheet publicada como página web
-            const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pubhtml?gid=0&single=true';
+            // URL de tu Google Sheet publicada como CSV
+            const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pub?gid=0&single=true&output=csv';
+            
+            // Usamos un proxy CORS para evitar problemas
+            const corsProxy = 'https://api.allorigins.win/get?url=';
             
             searchButton.addEventListener('click', searchByRut);
             rutInput.addEventListener('keypress', function(e) {
@@ -126,6 +129,55 @@
                     searchByRut();
                 }
             });
+            
+            // Variable para almacenar los datos una vez cargados
+            let sheetData = null;
+            
+            // Cargamos los datos al iniciar la página
+            loadSheetData();
+            
+            function loadSheetData() {
+                loadingDiv.style.display = 'block';
+                
+                fetch(corsProxy + encodeURIComponent(sheetUrl))
+                    .then(response => {
+                        if (!response.ok) throw new Error('Error al cargar los datos');
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Parseamos el CSV
+                        const csvData = data.contents;
+                        const rows = csvData.split('\n');
+                        
+                        // Procesamos los datos
+                        sheetData = [];
+                        const headers = rows[0].split(',');
+                        
+                        // Identificamos los índices de las columnas necesarias
+                        const rutIndex = headers.indexOf('D');
+                        const nombreIndex = headers.indexOf('F');
+                        const horaIndex = headers.indexOf('G');
+                        
+                        // Almacenamos los datos en un formato más manejable
+                        for (let i = 1; i < rows.length; i++) {
+                            const cells = rows[i].split(',');
+                            if (cells.length > Math.max(rutIndex, nombreIndex, horaIndex)) {
+                                sheetData.push({
+                                    rut: cells[rutIndex] ? cells[rutIndex].trim() : '',
+                                    nombre: cells[nombreIndex] ? cells[nombreIndex].trim() : '',
+                                    hora: cells[horaIndex] ? cells[horaIndex].trim() : ''
+                                });
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showError('Error al cargar los datos. Por favor recarga la página.');
+                    })
+                    .finally(() => {
+                        loadingDiv.style.display = 'none';
+                    });
+            }
             
             function searchByRut() {
                 const rut = rutInput.value.trim();
@@ -135,86 +187,34 @@
                     return;
                 }
                 
-                // Validar formato básico de RUT (ej: 1234567-8)
+                // Validar formato de RUT (ej: 12345678-9)
                 if (!/^[0-9]{7,8}-[0-9kK]{1}$/.test(rut)) {
-                    showError('Formato de RUT inválido. Use el formato: 1234567-8');
+                    showError('Formato de RUT inválido. Use el formato: 12345678-9');
                     return;
                 }
                 
-                // Mostrar loading, ocultar resultados y errores anteriores
+                if (!sheetData || sheetData.length === 0) {
+                    showError('Los datos no se han cargado correctamente. Por favor recarga la página.');
+                    return;
+                }
+                
                 loadingDiv.style.display = 'block';
                 resultsDiv.style.display = 'none';
                 errorDiv.style.display = 'none';
                 
-                // Usamos un iframe para cargar el HTML y luego extraer los datos
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = sheetUrl;
-                document.body.appendChild(iframe);
+                // Buscamos el RUT en los datos cargados
+                const resultado = sheetData.find(item => item.rut === rut);
                 
-                iframe.onload = function() {
-                    try {
-                        // Accedemos al documento dentro del iframe
-                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                        
-                        // Buscamos la tabla que contiene los datos
-                        const tables = iframeDoc.getElementsByTagName('table');
-                        if (tables.length === 0) {
-                            throw new Error('No se encontraron tablas en la hoja de cálculo');
-                        }
-                        
-                        const dataTable = tables[0];
-                        const rows = dataTable.getElementsByTagName('tr');
-                        
-                        // Asumimos que la primera fila son los headers
-                        let rutIndex = -1, nombreIndex = -1, horaIndex = -1;
-                        const headerCells = rows[0].getElementsByTagName('th');
-                        
-                        // Buscamos los índices de las columnas que necesitamos
-                        for (let i = 0; i < headerCells.length; i++) {
-                            const cellText = headerCells[i].textContent.trim();
-                            if (cellText === 'D') rutIndex = i;
-                            if (cellText === 'F') nombreIndex = i;
-                            if (cellText === 'G') horaIndex = i;
-                        }
-                        
-                        if (rutIndex === -1 || nombreIndex === -1 || horaIndex === -1) {
-                            throw new Error('No se encontraron las columnas necesarias en la hoja de cálculo');
-                        }
-                        
-                        // Buscamos el RUT en los datos
-                        let found = false;
-                        for (let i = 1; i < rows.length; i++) {
-                            const cells = rows[i].getElementsByTagName('td');
-                            if (cells.length > rutIndex && cells[rutIndex].textContent.trim() === rut) {
-                                // Mostrar resultados
-                                document.getElementById('rutResult').textContent = cells[rutIndex].textContent.trim();
-                                document.getElementById('nombreResult').textContent = cells[nombreIndex].textContent.trim();
-                                document.getElementById('horaResult').textContent = cells[horaIndex].textContent.trim();
-                                
-                                resultsDiv.style.display = 'block';
-                                found = true;
-                                break;
-                            }
-                        }
-                        
-                        if (!found) {
-                            showError('No se encontraron resultados para el RUT ingresado');
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        showError('Ocurrió un error al buscar la información. Por favor intente nuevamente.');
-                    } finally {
-                        loadingDiv.style.display = 'none';
-                        document.body.removeChild(iframe);
-                    }
-                };
+                if (resultado) {
+                    document.getElementById('rutResult').textContent = resultado.rut;
+                    document.getElementById('nombreResult').textContent = resultado.nombre;
+                    document.getElementById('horaResult').textContent = resultado.hora;
+                    resultsDiv.style.display = 'block';
+                } else {
+                    showError('No se encontraron resultados para el RUT ingresado');
+                }
                 
-                iframe.onerror = function() {
-                    showError('Error al cargar la hoja de cálculo');
-                    loadingDiv.style.display = 'none';
-                    document.body.removeChild(iframe);
-                };
+                loadingDiv.style.display = 'none';
             }
             
             function showError(message) {
