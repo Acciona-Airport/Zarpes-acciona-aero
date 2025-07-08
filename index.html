@@ -1,47 +1,233 @@
-<script>
-  // URL de tu Apps Script publicado (REMPLAZAR CON TU URL)
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbzSRW6kNQtezGcQr-rU1YDc8Qxc9YuX0o2lQq7yPWSvooiFXGiap1LnPD1nBvREeDe0_w/exec"; 
-  
-  function buscarDatos() {
-    const rut = document.getElementById('rutInput').value.trim();
-    const resultadoDiv = document.getElementById('resultado');
-    const datosDiv = document.getElementById('datosTrabajador');
-    
-    if (!rut) {
-      alert("Por favor ingrese un RUT");
-      return;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buscador de Trabajadores - Zarpes Acciona</title>
+  <style>
+    :root {
+      --primary: #2c3e50;
+      --secondary: #3498db;
+      --light: #ecf0f1;
+      --danger: #e74c3c;
+      --success: #27ae60;
     }
     
-    // Mostrar estado de carga
-    datosDiv.innerHTML = "<p>Buscando...</p>";
-    resultadoDiv.style.display = "block";
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      background-color: #f5f7fa;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
     
-    // Hacer la consulta a Google Sheets
-    fetch(`${scriptUrl}?rut=${encodeURIComponent(rut)}`)
-      .then(response => {
-        if (!response.ok) throw new Error("Error en la red");
-        return response.json();
-      })
-      .then(data => {
-        if (data.encontrado) {
-          datosDiv.innerHTML = `
-            <div class="dato"><span class="etiqueta">RUT:</span> ${data.datos.rut}</div>
-            <div class="dato"><span class="etiqueta">Nombre:</span> ${data.datos.nombre}</div>
-            <div class="dato"><span class="etiqueta">Hora Término Turno:</span> ${data.datos.horario}</div>
-            <div class="dato"><span class="etiqueta">Comuna:</span> ${data.datos.comuna}</div>
-          `;
-        } else {
-          datosDiv.innerHTML = `<p class="error">${data.mensaje}</p>`;
-        }
-      })
-      .catch(error => {
-        datosDiv.innerHTML = `<p class="error">Error al conectar con el servidor</p>`;
-        console.error("Error:", error);
-      });
-  }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background-color: var(--primary);
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .search-container {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    #rutInput {
+      flex: 1;
+      padding: 12px 15px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    
+    #rutInput:focus {
+      border-color: var(--secondary);
+      outline: none;
+    }
+    
+    #searchButton {
+      background-color: var(--secondary);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: background-color 0.3s;
+    }
+    
+    #searchButton:hover {
+      background-color: #2980b9;
+    }
+    
+    .result-container {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+      display: none;
+    }
+    
+    .result-title {
+      color: var(--primary);
+      margin-top: 0;
+      border-bottom: 2px solid var(--light);
+      padding-bottom: 10px;
+    }
+    
+    .data-row {
+      display: flex;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .data-label {
+      font-weight: 600;
+      color: var(--primary);
+      min-width: 150px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--secondary);
+    }
+    
+    .error {
+      color: var(--danger);
+      padding: 15px;
+      background-color: #fdecea;
+      border-radius: 6px;
+      border-left: 4px solid var(--danger);
+    }
+    
+    .success {
+      color: var(--success);
+    }
+    
+    .instructions {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    @media (max-width: 600px) {
+      .search-box {
+        flex-direction: column;
+      }
+      
+      #searchButton {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Buscador de Trabajadores</h1>
+    <p>Zarpes Acciona Aero</p>
+  </div>
   
-  // Buscar al presionar Enter
-  document.getElementById('rutInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') buscarDatos();
-  });
-</script>
+  <div class="search-container">
+    <h2>Consulta de Datos</h2>
+    <p>Ingrese el RUT del trabajador (con o sin puntos ni guión):</p>
+    
+    <div class="search-box">
+      <input type="text" id="rutInput" placeholder="Ej: 12345678-9 o 123456789">
+      <button id="searchButton" onclick="buscarDatos()">Buscar</button>
+    </div>
+    
+    <div class="instructions">
+      <p><strong>Instrucciones:</strong> Ingrese el RUT del trabajador y presione Buscar. El sistema mostrará automáticamente los datos asociados.</p>
+    </div>
+  </div>
+  
+  <div class="result-container" id="resultado">
+    <h3 class="result-title">Resultados de la Búsqueda</h3>
+    <div id="datosTrabajador">
+      <!-- Los datos se cargarán aquí dinámicamente -->
+    </div>
+  </div>
+
+  <script>
+    // URL de tu Apps Script publicado
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbzSRW6kNQtezGcQr-rU1YDc8Qxc9YuX0o2lQq7yPWSvooiFXGiap1LnPD1nBvREeDe0_w/exec";
+    
+    function buscarDatos() {
+      const rut = document.getElementById('rutInput').value.trim();
+      const resultadoDiv = document.getElementById('resultado');
+      const datosDiv = document.getElementById('datosTrabajador');
+      
+      if (!rut) {
+        alert("Por favor ingrese un RUT válido");
+        return;
+      }
+      
+      // Mostrar estado de carga
+      resultadoDiv.style.display = "block";
+      datosDiv.innerHTML = '<div class="loading">Buscando información...</div>';
+      
+      // Hacer la consulta a Google Sheets
+      fetch(`${scriptUrl}?rut=${encodeURIComponent(rut)}`)
+        .then(response => {
+          if (!response.ok) throw new Error("Error en la conexión");
+          return response.json();
+        })
+        .then(data => {
+          if (data.encontrado) {
+            datosDiv.innerHTML = `
+              <div class="data-row">
+                <div class="data-label">RUT:</div>
+                <div>${data.datos.rut || 'No disponible'}</div>
+              </div>
+              <div class="data-row">
+                <div class="data-label">Nombre:</div>
+                <div>${data.datos.nombre || 'No disponible'}</div>
+              </div>
+              <div class="data-row">
+                <div class="data-label">Hora Término Turno:</div>
+                <div>${data.datos.horario || 'No disponible'}</div>
+              </div>
+              <div class="data-row">
+                <div class="data-label">Comuna:</div>
+                <div>${data.datos.comuna || 'No disponible'}</div>
+              </div>
+            `;
+          } else {
+            datosDiv.innerHTML = `<div class="error">${data.mensaje || 'RUT no encontrado en los registros'}</div>`;
+          }
+        })
+        .catch(error => {
+          datosDiv.innerHTML = `<div class="error">Error al conectar con el servidor. Por favor intente nuevamente.</div>`;
+          console.error("Error:", error);
+        });
+    }
+    
+    // Buscar al presionar Enter
+    document.getElementById('rutInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') buscarDatos();
+    });
+  </script>
+</body>
+</html>
