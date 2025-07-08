@@ -117,11 +117,8 @@
             const errorDiv = document.getElementById('errorMessage');
             const loadingDiv = document.getElementById('loading');
             
-            // URL alternativa para evitar problemas de CORS
-            const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pub?gid=0&single=true&output=csv';
-            
-            // Usamos un proxy CORS para evitar problemas
-            const proxyUrl = 'https://api.allorigins.win/get?url=';
+            // URL de tu Google Sheet publicada como página web
+            const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pubhtml?gid=0&single=true';
             
             searchButton.addEventListener('click', searchByRut);
             rutInput.addEventListener('keypress', function(e) {
@@ -138,9 +135,9 @@
                     return;
                 }
                 
-                // Validar formato básico de RUT (ej: 1234567-8 o 12345678-9)
+                // Validar formato básico de RUT (ej: 1234567-8)
                 if (!/^[0-9]{7,8}-[0-9kK]{1}$/.test(rut)) {
-                    showError('Formato de RUT inválido. Use el formato: 1234567-8 o 12345678-9');
+                    showError('Formato de RUT inválido. Use el formato: 1234567-8');
                     return;
                 }
                 
@@ -149,38 +146,51 @@
                 resultsDiv.style.display = 'none';
                 errorDiv.style.display = 'none';
                 
-                // Usamos fetch con el proxy CORS
-                fetch(proxyUrl + encodeURIComponent(sheetUrl))
-                    .then(response => {
-                        if (!response.ok) throw new Error('Error en la red');
-                        return response.json();
-                    })
-                    .then(data => {
-                        // El contenido está en data.contents
-                        const csvData = data.contents;
+                // Usamos un iframe para cargar el HTML y luego extraer los datos
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = sheetUrl;
+                document.body.appendChild(iframe);
+                
+                iframe.onload = function() {
+                    try {
+                        // Accedemos al documento dentro del iframe
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                         
-                        // Parsear CSV manualmente
-                        const rows = csvData.split('\n');
+                        // Buscamos la tabla que contiene los datos
+                        const tables = iframeDoc.getElementsByTagName('table');
+                        if (tables.length === 0) {
+                            throw new Error('No se encontraron tablas en la hoja de cálculo');
+                        }
                         
-                        // Encontrar índices de las columnas (asumimos que la primera fila son los headers)
-                        const headers = rows[0].split(',');
-                        const rutIndex = headers.findIndex(h => h.trim() === 'D');
-                        const nombreIndex = headers.findIndex(h => h.trim() === 'F');
-                        const horaIndex = headers.findIndex(h => h.trim() === 'G');
+                        const dataTable = tables[0];
+                        const rows = dataTable.getElementsByTagName('tr');
+                        
+                        // Asumimos que la primera fila son los headers
+                        let rutIndex = -1, nombreIndex = -1, horaIndex = -1;
+                        const headerCells = rows[0].getElementsByTagName('th');
+                        
+                        // Buscamos los índices de las columnas que necesitamos
+                        for (let i = 0; i < headerCells.length; i++) {
+                            const cellText = headerCells[i].textContent.trim();
+                            if (cellText === 'D') rutIndex = i;
+                            if (cellText === 'F') nombreIndex = i;
+                            if (cellText === 'G') horaIndex = i;
+                        }
                         
                         if (rutIndex === -1 || nombreIndex === -1 || horaIndex === -1) {
                             throw new Error('No se encontraron las columnas necesarias en la hoja de cálculo');
                         }
                         
-                        // Buscar el RUT en los datos
+                        // Buscamos el RUT en los datos
                         let found = false;
                         for (let i = 1; i < rows.length; i++) {
-                            const cells = rows[i].split(',');
-                            if (cells.length > rutIndex && cells[rutIndex].trim() === rut) {
+                            const cells = rows[i].getElementsByTagName('td');
+                            if (cells.length > rutIndex && cells[rutIndex].textContent.trim() === rut) {
                                 // Mostrar resultados
-                                document.getElementById('rutResult').textContent = cells[rutIndex].trim();
-                                document.getElementById('nombreResult').textContent = cells[nombreIndex].trim();
-                                document.getElementById('horaResult').textContent = cells[horaIndex].trim();
+                                document.getElementById('rutResult').textContent = cells[rutIndex].textContent.trim();
+                                document.getElementById('nombreResult').textContent = cells[nombreIndex].textContent.trim();
+                                document.getElementById('horaResult').textContent = cells[horaIndex].textContent.trim();
                                 
                                 resultsDiv.style.display = 'block';
                                 found = true;
@@ -191,14 +201,20 @@
                         if (!found) {
                             showError('No se encontraron resultados para el RUT ingresado');
                         }
-                    })
-                    .catch(error => {
+                    } catch (error) {
                         console.error('Error:', error);
                         showError('Ocurrió un error al buscar la información. Por favor intente nuevamente.');
-                    })
-                    .finally(() => {
+                    } finally {
                         loadingDiv.style.display = 'none';
-                    });
+                        document.body.removeChild(iframe);
+                    }
+                };
+                
+                iframe.onerror = function() {
+                    showError('Error al cargar la hoja de cálculo');
+                    loadingDiv.style.display = 'none';
+                    document.body.removeChild(iframe);
+                };
             }
             
             function showError(message) {
