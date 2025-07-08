@@ -1,155 +1,202 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Buscador de Trabajadores</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 500px;
-      margin: 40px auto;
-      padding: 20px;
-      background-color: #f9f9f9;
-    }
-    .buscador-container {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-    }
-    #rutInput {
-      width: 100%;
-      padding: 15px;
-      font-size: 16px;
-      border: 2px solid #ddd;
-      border-radius: 6px;
-      margin-bottom: 15px;
-      box-sizing: border-box;
-    }
-    #rutInput:focus {
-      border-color: #3498db;
-      outline: none;
-    }
-    #resultado {
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 6px;
-      background-color: #f8f9fa;
-      display: none;
-    }
-    .dato {
-      margin: 10px 0;
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-    }
-    .etiqueta {
-      font-weight: bold;
-      color: #2c3e50;
-      display: inline-block;
-      width: 120px;
-    }
-    .error {
-      color: #e74c3c;
-      padding: 10px;
-      background-color: #fdecea;
-      border-radius: 4px;
-    }
-    .loading {
-      text-align: center;
-      color: #3498db;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador por RUT</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .search-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        #rutInput {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+        }
+        #searchButton {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #searchButton:hover {
+            background-color: #218838;
+        }
+        .results {
+            background-color: white;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .result-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .result-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 4px;
+            display: none;
+        }
+        .loading {
+            text-align: center;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-  <div class="buscador-container">
-    <h2 style="text-align: center; color: #2c3e50;">Buscador de Trabajadores</h2>
-    <p style="text-align: center; color: #666;">Ingrese el RUT del trabajador (ej: 6695361-0)</p>
+    <h1>Buscador por RUT</h1>
     
-    <input type="text" id="rutInput" placeholder="Ejemplo: 6695361-0">
-    
-    <div id="resultado">
-      <div id="datosTrabajador"></div>
+    <div class="search-container">
+        <input type="text" id="rutInput" placeholder="Ingrese RUT (ej: 6695361-0)" required>
+        <button id="searchButton">Buscar</button>
     </div>
-  </div>
+    
+    <div id="errorMessage" class="error"></div>
+    
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Buscando información...</p>
+    </div>
+    
+    <div id="results" class="results">
+        <h2>Resultados:</h2>
+        <div class="result-item">
+            <span class="result-label">RUT:</span> <span id="rutResult"></span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">Nombre:</span> <span id="nombreResult"></span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">Hora término turno:</span> <span id="horaResult"></span>
+        </div>
+    </div>
 
-  <script>
-    // URL de tu hoja pública en formato JSON
-    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pub?output=tsv";
-    
-    // Variable para almacenar los datos
-    let todosLosDatos = [];
-    
-    // Función para cargar los datos iniciales
-    function cargarDatos() {
-      fetch(sheetUrl)
-        .then(response => response.text())
-        .then(data => {
-          // Convertir TSV a array de objetos
-          const lineas = data.split('\n');
-          const encabezados = lineas[0].split('\t');
-          
-          todosLosDatos = lineas.slice(1).map(linea => {
-            const valores = linea.split('\t');
-            return encabezados.reduce((obj, encabezado, i) => {
-              obj[encabezado.trim()] = valores[i] ? valores[i].trim() : '';
-              return obj;
-            }, {});
-          });
-          
-          console.log("Datos cargados:", todosLosDatos);
-        })
-        .catch(error => {
-          console.error("Error al cargar datos:", error);
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchButton = document.getElementById('searchButton');
+            const rutInput = document.getElementById('rutInput');
+            const resultsDiv = document.getElementById('results');
+            const errorDiv = document.getElementById('errorMessage');
+            const loadingDiv = document.getElementById('loading');
+            
+            // URL de tu Google Sheet pública
+            const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pub?gid=0&single=true&output=csv';
+            
+            searchButton.addEventListener('click', searchByRut);
+            rutInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchByRut();
+                }
+            });
+            
+            function searchByRut() {
+                const rut = rutInput.value.trim();
+                
+                if (!rut) {
+                    showError('Por favor ingrese un RUT');
+                    return;
+                }
+                
+                // Validar formato básico de RUT (ej: 12345678-9)
+                if (!/^[0-9]{7,8}-[0-9kK]{1}$/.test(rut)) {
+                    showError('Formato de RUT inválido. Use el formato: 12345678-9');
+                    return;
+                }
+                
+                // Mostrar loading, ocultar resultados y errores anteriores
+                loadingDiv.style.display = 'block';
+                resultsDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+                
+                fetch(sheetUrl)
+                    .then(response => response.text())
+                    .then(csvData => {
+                        // Parsear CSV
+                        const rows = csvData.split('\n');
+                        const headers = rows[0].split(',');
+                        
+                        // Encontrar índices de las columnas que necesitamos
+                        const rutIndex = headers.findIndex(h => h.trim() === 'D');
+                        const nombreIndex = headers.findIndex(h => h.trim() === 'F');
+                        const horaIndex = headers.findIndex(h => h.trim() === 'G');
+                        
+                        if (rutIndex === -1 || nombreIndex === -1 || horaIndex === -1) {
+                            throw new Error('No se encontraron las columnas necesarias en la hoja de cálculo');
+                        }
+                        
+                        // Buscar el RUT en los datos
+                        let found = false;
+                        for (let i = 1; i < rows.length; i++) {
+                            const cells = rows[i].split(',');
+                            if (cells.length > rutIndex && cells[rutIndex].trim() === rut) {
+                                // Mostrar resultados
+                                document.getElementById('rutResult').textContent = cells[rutIndex].trim();
+                                document.getElementById('nombreResult').textContent = cells[nombreIndex].trim();
+                                document.getElementById('horaResult').textContent = cells[horaIndex].trim();
+                                
+                                resultsDiv.style.display = 'block';
+                                found = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!found) {
+                            showError('No se encontraron resultados para el RUT ingresado');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showError('Ocurrió un error al buscar la información. Por favor intente nuevamente.');
+                    })
+                    .finally(() => {
+                        loadingDiv.style.display = 'none';
+                    });
+            }
+            
+            function showError(message) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                resultsDiv.style.display = 'none';
+            }
         });
-    }
-    
-    // Cargar datos al iniciar
-    cargarDatos();
-    
-    // Función para buscar por RUT
-    function buscarPorRut(rut) {
-      // Normalizar el RUT (eliminar puntos y guión)
-      const rutLimpio = rut.replace(/[.-]/g, '').toUpperCase();
-      
-      // Buscar en todos los datos
-      return todosLosDatos.find(fila => {
-        const rutEnFila = fila.RUT ? fila.RUT.replace(/[.-]/g, '').toUpperCase() : '';
-        return rutEnFila === rutLimpio;
-      });
-    }
-    
-    // Evento para buscar mientras escribe
-    document.getElementById('rutInput').addEventListener('input', function(e) {
-      const rut = e.target.value.trim();
-      const resultadoDiv = document.getElementById('resultado');
-      const datosDiv = document.getElementById('datosTrabajador');
-      
-      // Mostrar u ocultar resultados
-      if (rut.length >= 8) { // Longitud mínima para un RUT chileno
-        datosDiv.innerHTML = '<p class="loading">Buscando...</p>';
-        resultadoDiv.style.display = "block";
-        
-        // Usar setTimeout para no sobrecargar con muchas búsquedas rápidas
-        setTimeout(() => {
-          const resultado = buscarPorRut(rut);
-          
-          if (resultado) {
-            datosDiv.innerHTML = `
-              <div class="dato"><span class="etiqueta">Nombre:</span> ${resultado.NOMBRE || 'No disponible'}</div>
-              <div class="dato"><span class="etiqueta">RUT:</span> ${resultado.RUT || 'No disponible'}</div>
-              <div class="dato"><span class="etiqueta">Sección:</span> ${resultado.SECCIÓN || 'No disponible'}</div>
-              <div class="dato"><span class="etiqueta">Horario Término:</span> ${resultado['HORA ESTIMADA TERMINO TURNO'] || 'No disponible'}</div>
-              <div class="dato"><span class="etiqueta">Comuna:</span> ${resultado.COMUNA || 'No disponible'}</div>
-            `;
-          } else {
-            datosDiv.innerHTML = `<div class="error">No se encontraron resultados para este RUT</div>`;
-          }
-        }, 300); // Pequeño retraso para mejorar rendimiento
-      } else {
-        resultadoDiv.style.display = "none";
-      }
-    });
-  </script>
+    </script>
 </body>
 </html>
