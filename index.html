@@ -1,126 +1,154 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Buscador de Trabajadores - Zarpes Acciona</title>
+  <title>Buscador de Trabajadores</title>
   <style>
-    /* [Mantén todos tus estilos CSS existentes] */
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    .data-table th {
-      background-color: #f2f2f2;
-      text-align: left;
-      padding: 10px;
-      border: 1px solid #ddd;
-    }
-    .data-table td {
-      padding: 10px;
-      border: 1px solid #ddd;
-    }
-    .debug-info {
-      font-size: 12px;
-      color: #666;
-      margin-top: 20px;
-      padding: 10px;
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 20px;
       background-color: #f9f9f9;
+    }
+    .buscador-container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+    }
+    #rutInput {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    #rutInput:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    #resultado {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 6px;
+      background-color: #f8f9fa;
+      display: none;
+    }
+    .dato {
+      margin: 10px 0;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .etiqueta {
+      font-weight: bold;
+      color: #2c3e50;
+      display: inline-block;
+      width: 120px;
+    }
+    .error {
+      color: #e74c3c;
+      padding: 10px;
+      background-color: #fdecea;
       border-radius: 4px;
+    }
+    .loading {
+      text-align: center;
+      color: #3498db;
     }
   </style>
 </head>
 <body>
-  <!-- [Mantén todo tu HTML existente hasta el div#datosTrabajador] -->
-  
-  <div class="result-container" id="resultado">
-    <h3 class="result-title">Resultados de la Búsqueda</h3>
-    <div id="datosTrabajador"></div>
-    <div id="debugInfo" class="debug-info" style="display: none;"></div>
+  <div class="buscador-container">
+    <h2 style="text-align: center; color: #2c3e50;">Buscador de Trabajadores</h2>
+    <p style="text-align: center; color: #666;">Ingrese el RUT del trabajador (ej: 6695361-0)</p>
+    
+    <input type="text" id="rutInput" placeholder="Ejemplo: 6695361-0">
+    
+    <div id="resultado">
+      <div id="datosTrabajador"></div>
+    </div>
   </div>
 
   <script>
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbzSRW6kNQtezGcQr-rU1YDc8Qxc9YuX0o2lQq7yPWSvooiFXGiap1LnPD1nBvREeDe0_w/exec";
+    // URL de tu hoja pública en formato JSON
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pub?output=tsv";
     
-    function buscarDatos() {
-      const rut = document.getElementById('rutInput').value.trim();
-      const resultadoDiv = document.getElementById('resultado');
-      const datosDiv = document.getElementById('datosTrabajador');
-      const debugDiv = document.getElementById('debugInfo');
-      
-      // Validación del RUT
-      if (!rut || rut.length < 8) {
-        resultadoDiv.style.display = "block";
-        datosDiv.innerHTML = '<div class="error">Por favor ingrese un RUT válido (mínimo 8 caracteres)</div>';
-        debugDiv.style.display = "none";
-        return;
-      }
-      
-      resultadoDiv.style.display = "block";
-      datosDiv.innerHTML = '<div class="loading">Buscando información...</div>';
-      debugDiv.style.display = "none";
-      
-      // Construir URL con parámetros
-      const url = new URL(scriptUrl);
-      url.searchParams.append('rut', rut);
-      
-      // Configurar opciones de fetch
-      const fetchOptions = {
-        method: 'GET',
-        redirect: 'follow',
-        headers: {
-          'Accept': 'application/json'
-        }
-      };
-      
-      // Realizar la consulta
-      fetch(url, fetchOptions)
-        .then(response => {
-          if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-          return response.json();
-        })
+    // Variable para almacenar los datos
+    let todosLosDatos = [];
+    
+    // Función para cargar los datos iniciales
+    function cargarDatos() {
+      fetch(sheetUrl)
+        .then(response => response.text())
         .then(data => {
-          console.log("Datos recibidos:", data);
+          // Convertir TSV a array de objetos
+          const lineas = data.split('\n');
+          const encabezados = lineas[0].split('\t');
           
-          if (data.error) {
-            datosDiv.innerHTML = `<div class="error">${data.mensaje}</div>`;
-            debugDiv.innerHTML = `<p>Parámetros recibidos: ${JSON.stringify(data.parametrosRecibidos || 'Ninguno')}</p>`;
-            debugDiv.style.display = "block";
-          } else if (data.encontrado) {
-            datosDiv.innerHTML = `
-              <table class="data-table">
-                <tr><th>Número</th><td>${data.datos.numero || 'N/A'}</td></tr>
-                <tr><th>Fecha</th><td>${data.datos.fecha || 'N/A'}</td></tr>
-                <tr><th>BP</th><td>${data.datos.bp || 'N/A'}</td></tr>
-                <tr><th>BP con guión</th><td>${data.datos.bp_con_guion || 'N/A'}</td></tr>
-                <tr><th>Sección</th><td>${data.datos.seccion || 'N/A'}</td></tr>
-                <tr><th>Nombre</th><td>${data.datos.nombre || 'N/A'}</td></tr>
-                <tr><th>Hora Término</th><td>${data.datos.horario_termino || 'N/A'}</td></tr>
-                <tr><th>Comuna</th><td>${data.datos.comuna || 'N/A'}</td></tr>
-              </table>
-            `;
-          } else {
-            datosDiv.innerHTML = `<div class="error">${data.mensaje}</div>`;
-          }
+          todosLosDatos = lineas.slice(1).map(linea => {
+            const valores = linea.split('\t');
+            return encabezados.reduce((obj, encabezado, i) => {
+              obj[encabezado.trim()] = valores[i] ? valores[i].trim() : '';
+              return obj;
+            }, {});
+          });
+          
+          console.log("Datos cargados:", todosLosDatos);
         })
         .catch(error => {
-          console.error("Error en la solicitud:", error);
-          datosDiv.innerHTML = `
-            <div class="error">
-              Error al conectar con el servidor. Por favor intente nuevamente.
-              <br><small>${error.message}</small>
-            </div>`;
-          debugDiv.innerHTML = `
-            <p><strong>URL solicitada:</strong> ${url.toString()}</p>
-            <p><strong>Error:</strong> ${error.message}</p>`;
-          debugDiv.style.display = "block";
+          console.error("Error al cargar datos:", error);
         });
     }
     
-    // Buscar al presionar Enter
-    document.getElementById('rutInput').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') buscarDatos();
+    // Cargar datos al iniciar
+    cargarDatos();
+    
+    // Función para buscar por RUT
+    function buscarPorRut(rut) {
+      // Normalizar el RUT (eliminar puntos y guión)
+      const rutLimpio = rut.replace(/[.-]/g, '').toUpperCase();
+      
+      // Buscar en todos los datos
+      return todosLosDatos.find(fila => {
+        const rutEnFila = fila.RUT ? fila.RUT.replace(/[.-]/g, '').toUpperCase() : '';
+        return rutEnFila === rutLimpio;
+      });
+    }
+    
+    // Evento para buscar mientras escribe
+    document.getElementById('rutInput').addEventListener('input', function(e) {
+      const rut = e.target.value.trim();
+      const resultadoDiv = document.getElementById('resultado');
+      const datosDiv = document.getElementById('datosTrabajador');
+      
+      // Mostrar u ocultar resultados
+      if (rut.length >= 8) { // Longitud mínima para un RUT chileno
+        datosDiv.innerHTML = '<p class="loading">Buscando...</p>';
+        resultadoDiv.style.display = "block";
+        
+        // Usar setTimeout para no sobrecargar con muchas búsquedas rápidas
+        setTimeout(() => {
+          const resultado = buscarPorRut(rut);
+          
+          if (resultado) {
+            datosDiv.innerHTML = `
+              <div class="dato"><span class="etiqueta">Nombre:</span> ${resultado.NOMBRE || 'No disponible'}</div>
+              <div class="dato"><span class="etiqueta">RUT:</span> ${resultado.RUT || 'No disponible'}</div>
+              <div class="dato"><span class="etiqueta">Sección:</span> ${resultado.SECCIÓN || 'No disponible'}</div>
+              <div class="dato"><span class="etiqueta">Horario Término:</span> ${resultado['HORA ESTIMADA TERMINO TURNO'] || 'No disponible'}</div>
+              <div class="dato"><span class="etiqueta">Comuna:</span> ${resultado.COMUNA || 'No disponible'}</div>
+            `;
+          } else {
+            datosDiv.innerHTML = `<div class="error">No se encontraron resultados para este RUT</div>`;
+          }
+        }, 300); // Pequeño retraso para mejorar rendimiento
+      } else {
+        resultadoDiv.style.display = "none";
+      }
     });
   </script>
 </body>
