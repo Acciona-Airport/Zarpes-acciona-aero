@@ -117,11 +117,30 @@
             const errorDiv = document.getElementById('errorMessage');
             const loadingDiv = document.getElementById('loading');
             
-            // URL de tu Google Sheet publicada como CSV
-            const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pub?gid=0&single=true&output=csv';
+            // ID de tu hoja de cálculo (extraído de la URL)
+            const spreadsheetId = '2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ';
             
-            // Usamos un proxy CORS para evitar problemas
-            const corsProxy = 'https://api.allorigins.win/get?url=';
+            // Cargamos la API de Google Sheets
+            const script = document.createElement('script');
+            script.src = 'https://apis.google.com/js/api.js';
+            script.onload = initClient;
+            document.body.appendChild(script);
+            
+            let gapiClient;
+            
+            function initClient() {
+                gapi.load('client', () => {
+                    gapi.client.init({
+                        'apiKey': 'AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY', // Clave API pública
+                        'discoveryDocs': ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                    }).then(() => {
+                        gapiClient = gapi.client;
+                    }).catch(error => {
+                        console.error('Error al inicializar la API:', error);
+                        showError('Error al conectar con Google Sheets. Recarga la página.');
+                    });
+                });
+            }
             
             searchButton.addEventListener('click', searchByRut);
             rutInput.addEventListener('keypress', function(e) {
@@ -129,55 +148,6 @@
                     searchByRut();
                 }
             });
-            
-            // Variable para almacenar los datos una vez cargados
-            let sheetData = null;
-            
-            // Cargamos los datos al iniciar la página
-            loadSheetData();
-            
-            function loadSheetData() {
-                loadingDiv.style.display = 'block';
-                
-                fetch(corsProxy + encodeURIComponent(sheetUrl))
-                    .then(response => {
-                        if (!response.ok) throw new Error('Error al cargar los datos');
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Parseamos el CSV
-                        const csvData = data.contents;
-                        const rows = csvData.split('\n');
-                        
-                        // Procesamos los datos
-                        sheetData = [];
-                        const headers = rows[0].split(',');
-                        
-                        // Identificamos los índices de las columnas necesarias
-                        const rutIndex = headers.indexOf('D');
-                        const nombreIndex = headers.indexOf('F');
-                        const horaIndex = headers.indexOf('G');
-                        
-                        // Almacenamos los datos en un formato más manejable
-                        for (let i = 1; i < rows.length; i++) {
-                            const cells = rows[i].split(',');
-                            if (cells.length > Math.max(rutIndex, nombreIndex, horaIndex)) {
-                                sheetData.push({
-                                    rut: cells[rutIndex] ? cells[rutIndex].trim() : '',
-                                    nombre: cells[nombreIndex] ? cells[nombreIndex].trim() : '',
-                                    hora: cells[horaIndex] ? cells[horaIndex].trim() : ''
-                                });
-                            }
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        showError('Error al cargar los datos. Por favor recarga la página.');
-                    })
-                    .finally(() => {
-                        loadingDiv.style.display = 'none';
-                    });
-            }
             
             function searchByRut() {
                 const rut = rutInput.value.trim();
@@ -187,14 +157,8 @@
                     return;
                 }
                 
-                // Validar formato de RUT (ej: 12345678-9)
                 if (!/^[0-9]{7,8}-[0-9kK]{1}$/.test(rut)) {
                     showError('Formato de RUT inválido. Use el formato: 12345678-9');
-                    return;
-                }
-                
-                if (!sheetData || sheetData.length === 0) {
-                    showError('Los datos no se han cargado correctamente. Por favor recarga la página.');
                     return;
                 }
                 
@@ -202,19 +166,54 @@
                 resultsDiv.style.display = 'none';
                 errorDiv.style.display = 'none';
                 
-                // Buscamos el RUT en los datos cargados
-                const resultado = sheetData.find(item => item.rut === rut);
-                
-                if (resultado) {
-                    document.getElementById('rutResult').textContent = resultado.rut;
-                    document.getElementById('nombreResult').textContent = resultado.nombre;
-                    document.getElementById('horaResult').textContent = resultado.hora;
-                    resultsDiv.style.display = 'block';
-                } else {
-                    showError('No se encontraron resultados para el RUT ingresado');
+                if (!gapiClient) {
+                    showError('La API no está lista. Espera unos segundos y vuelve a intentar.');
+                    loadingDiv.style.display = 'none';
+                    return;
                 }
                 
-                loadingDiv.style.display = 'none';
+                // Leemos toda la hoja (rango A:J para cubrir todas las columnas necesarias)
+                gapiClient.sheets.spreadsheets.values.get({
+                    spreadsheetId: spreadsheetId,
+                    range: 'Hoja1!A:J' // Asegúrate que el nombre de la hoja sea correcto
+                }).then(response => {
+                    const data = response.result.values;
+                    if (!data || data.length < 2) {
+                        throw new Error('No hay datos en la hoja');
+                    }
+                    
+                    // Buscamos los índices de las columnas
+                    const headers = data[0];
+                    const rutIndex = headers.indexOf('RUT');
+                    const nombreIndex = headers.indexOf('NOMBRE');
+                    const horaIndex = headers.indexOf('HORA ESTIMADA TERMINO TURNO');
+                    
+                    if (rutIndex === -1 || nombreIndex === -1 || horaIndex === -1) {
+                        throw new Error('No se encontraron las columnas necesarias');
+                    }
+                    
+                    // Buscamos el RUT
+                    let found = false;
+                    for (let i = 1; i < data.length; i++) {
+                        if (data[i][rutIndex] === rut) {
+                            document.getElementById('rutResult').textContent = data[i][rutIndex];
+                            document.getElementById('nombreResult').textContent = data[i][nombreIndex];
+                            document.getElementById('horaResult').textContent = data[i][horaIndex];
+                            resultsDiv.style.display = 'block';
+                            found = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!found) {
+                        showError('No se encontraron resultados para el RUT ingresado');
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    showError('Error al buscar la información. Intenta nuevamente.');
+                }).finally(() => {
+                    loadingDiv.style.display = 'none';
+                });
             }
             
             function showError(message) {
