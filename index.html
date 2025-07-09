@@ -39,7 +39,7 @@
 
 <h1>Buscar Información de Transporte</h1>
 
-<input type="text" id="rutInput" placeholder="Ingresa RUT (Ej: 20035033-2 o 200350332)">
+<input type="text" id="rutInput" placeholder="Ej: 108421029 o 15431748-1">
 <button onclick="buscarRut()">Buscar</button>
 
 <div id="resultado" class="resultado" style="display: none;"></div>
@@ -48,17 +48,21 @@
   const API_URL = "https://script.google.com/macros/s/AKfycbzefe-5qo2uc2jjy5vEGcy6RBPp9Xw4UL-XAa7UPNPAb6eBjsqBjs8_anw3oTck_92BGA/exec";
   let datosTrabajadores = [];
 
+  // Normaliza el RUT: elimina puntos y guiones, lo convierte a minúsculas
   function normalizarRUT(rut) {
     if (!rut) return "";
-    return rut.replace(/[^0-9kK]/g, '').toLowerCase();
+    return rut.toString().replace(/[^0-9kK]/g, '').toLowerCase();
   }
 
-  function normalizarRUTConGuion(rut) {
-    if (!rut) return "";
-    rut = rut.toLowerCase().replace(/\./g, '').replace(/-/g, '');
-    const cuerpo = rut.slice(0, -1);
-    const dv = rut.slice(-1);
-    return cuerpo + '-' + dv;
+  // Convierte fecha ISO a solo hora (HH:MM)
+  function extraerHoraDesdeISO(fechaISO) {
+    if (!fechaISO) return "";
+    try {
+      const fecha = new Date(fechaISO);
+      return fecha.toTimeString().substring(0, 5); // HH:MM
+    } catch (e) {
+      return fechaISO;
+    }
   }
 
   async function buscarRut() {
@@ -77,9 +81,8 @@
       }
 
       const trabajador = datosTrabajadores.find(t => {
-        if (!t.RUT) return false;
-        const rutNormalizado = normalizarRUT(t.RUT);
-        return rutNormalizado === rutBuscado;
+        const rut = t.RUT ? normalizarRUT(t.RUT) : "";
+        return rut === rutBuscado;
       });
 
       if (trabajador) {
@@ -88,7 +91,7 @@
           <div class="campo"><strong>Nombre:</strong> ${trabajador.NOMBRE}</div>
           <div class="campo"><strong>Sección:</strong> ${trabajador.SECCIÓN}</div>
           <div class="campo"><strong>Comuna:</strong> ${trabajador.COMUNA}</div>
-          <div class="campo"><strong>Hora Estimada:</strong> ${trabajador["HORA ESTIMADA"]}</div>
+          <div class="campo"><strong>Hora Estimada:</strong> ${extraerHoraDesdeISO(trabajador["HORA ESTIMADA TERMINO TURNO"])}</div>
         `;
       } else {
         resultadoDiv.innerHTML = `<div class="campo">⚠️ No se encontró ningún trabajador con el RUT ingresado.</div>`;
