@@ -2,59 +2,120 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Buscador de Transporte por RUT</title>
+  <title>Consulta Zarpes Acciona</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      padding: 2em;
-      background-color: #f4f4f4;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
     }
-    h1 {
+
+    header {
+      background-color: #c20000;
+      color: #fff;
+      padding: 1em 2em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin: 0;
+    }
+
+    .contenedor {
+      padding: 2em;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .buscador {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1em;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 0.8em;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 0.8em 1.2em;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .alerta {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 1em;
+      border-left: 5px solid #28a745;
+      margin-bottom: 1em;
+      border-radius: 6px;
+    }
+
+    .resultado {
+      border: 1px solid #ccc;
+      border-left: 5px solid #c20000;
+      padding: 1em;
+      border-radius: 6px;
+      background-color: #f9f9f9;
+    }
+
+    .campo {
+      margin: 8px 0;
+      font-size: 16px;
+    }
+
+    .campo strong {
+      display: inline-block;
+      width: 160px;
       color: #333;
     }
-    input {
-      padding: 0.5em;
-      font-size: 16px;
-      width: 300px;
-    }
-    button {
-      padding: 0.5em 1em;
-      font-size: 16px;
-      margin-left: 10px;
-    }
-    .resultado {
-      margin-top: 20px;
-      background: #fff;
+
+    .no-resultados {
+      background-color: #f8d7da;
+      color: #721c24;
       padding: 1em;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      width: fit-content;
-    }
-    .campo {
-      margin-bottom: 8px;
+      border-left: 5px solid #c20000;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
 
-<h1>Buscar Información de Transporte</h1>
+<header>
+  <h1>Consulta Zarpes Acciona</h1>
+</header>
 
-<input type="text" id="rutInput" placeholder="Ej: 108421029 o 15431748-1">
-<button onclick="buscarRut()">Buscar</button>
+<div class="contenedor">
+  <div class="buscador">
+    <input type="text" id="rutInput" placeholder="Ingresa tu RUT sin puntos ni guión">
+    <button onclick="buscarRut()">🔍 Buscar</button>
+  </div>
 
-<div id="resultado" class="resultado" style="display: none;"></div>
+  <div id="resultado" style="display: none;"></div>
+</div>
 
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbzefe-5qo2uc2jjy5vEGcy6RBPp9Xw4UL-XAa7UPNPAb6eBjsqBjs8_anw3oTck_92BGA/exec";
   let datosTrabajadores = [];
 
-  // Normaliza el RUT: elimina puntos y guiones, lo convierte a minúsculas
   function normalizarRUT(rut) {
     if (!rut) return "";
     return rut.toString().replace(/[^0-9kK]/g, '').toLowerCase();
   }
 
-  // Convierte fecha ISO a solo hora (HH:MM)
   function extraerHoraDesdeISO(fechaISO) {
     if (!fechaISO) return "";
     try {
@@ -87,20 +148,22 @@
 
       if (trabajador) {
         resultadoDiv.innerHTML = `
-          <div class="campo"><strong>RUT:</strong> ${trabajador.RUT}</div>
-          <div class="campo"><strong>Nombre:</strong> ${trabajador.NOMBRE}</div>
-          <div class="campo"><strong>Sección:</strong> ${trabajador.SECCIÓN}</div>
-          <div class="campo"><strong>Comuna:</strong> ${trabajador.COMUNA}</div>
-          <div class="campo"><strong>Hora Estimada:</strong> ${extraerHoraDesdeISO(trabajador["HORA ESTIMADA TERMINO TURNO"])}</div>
+          <div class="alerta">✅ Se ha encontrado información para este colaborador</div>
+          <div class="resultado">
+            <div class="campo"><strong>RUT:</strong> ${trabajador.RUT}</div>
+            <div class="campo"><strong>Nombre:</strong> ${trabajador.NOMBRE}</div>
+            <div class="campo"><strong>Sección:</strong> ${trabajador.SECCIÓN}</div>
+            <div class="campo"><strong>Comuna:</strong> ${trabajador.COMUNA}</div>
+            <div class="campo"><strong>Hora Estimada:</strong> ${extraerHoraDesdeISO(trabajador["HORA ESTIMADA TERMINO TURNO"])}</div>
+          </div>
         `;
       } else {
-        resultadoDiv.innerHTML = `<div class="campo">⚠️ No se encontró ningún trabajador con el RUT ingresado.</div>`;
+        resultadoDiv.innerHTML = `<div class="no-resultados">⚠️ No se encontró ningún trabajador con el RUT ingresado.</div>`;
       }
 
       resultadoDiv.style.display = "block";
-
     } catch (error) {
-      resultadoDiv.innerHTML = `<div class="campo">❌ Error al consultar los datos: ${error.message}</div>`;
+      resultadoDiv.innerHTML = `<div class="no-resultados">❌ Error al consultar los datos: ${error.message}</div>`;
       resultadoDiv.style.display = "block";
     }
   }
