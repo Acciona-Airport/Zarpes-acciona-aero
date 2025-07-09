@@ -45,25 +45,25 @@
 <div id="resultado" class="resultado" style="display: none;"></div>
 
 <script>
-  const API_URL = "https://script.google.com/a/macros/acciona.aero/s/AKfycbwdvmgPFlauhUQ_8dDccP3cgoCWb28Ai3vwXoMmd5qSQKImJuWlTM61rkNPbmzx4Aod1Q/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbwdvmgPFlauhUQ_8dDccP3cgoCWb28Ai3vwXoMmd5qSQKImJuWlTM61rkNPbmzx4Aod1Q/exec";
   let datosTrabajadores = [];
 
-  // Limpia y normaliza el RUT (sin puntos, sin guión, minúsculas)
   function normalizarRUT(rut) {
-    return rut.replace(/[^0-9kK]/g, '').toLowerCase();
+    return rut.replace(/[^0-9kK]/g, '').toLowerCase(); // Solo números y 'k'
   }
 
   async function buscarRut() {
     const rutInput = document.getElementById("rutInput").value.trim();
     const rutBuscado = normalizarRUT(rutInput);
     const resultadoDiv = document.getElementById("resultado");
+
     resultadoDiv.style.display = "none";
     resultadoDiv.innerHTML = "";
 
     try {
       if (datosTrabajadores.length === 0) {
         const response = await fetch(API_URL);
-        if (!response.ok) throw new Error("No se pudo obtener la información");
+        if (!response.ok) throw new Error("No se pudo obtener la información.");
         datosTrabajadores = await response.json();
       }
 
