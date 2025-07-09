@@ -45,11 +45,12 @@
 <div id="resultado" class="resultado" style="display: none;"></div>
 
 <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbwdvmgPFlauhUQ_8dDccP3cgoCWb28Ai3vwXoMmd5qSQKImJuWlTM61rkNPbmzx4Aod1Q/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbzefe-5qo2uc2jjy5vEGcy6RBPp9Xw4UL-XAa7UPNPAb6eBjsqBjs8_anw3oTck_92BGA/exec";
   let datosTrabajadores = [];
 
   function normalizarRUT(rut) {
-    return rut.replace(/[^0-9kK]/g, '').toLowerCase(); // Solo números y 'k'
+    if (!rut) return "";
+    return rut.replace(/[^0-9kK]/g, '').toLowerCase();
   }
 
   async function buscarRut() {
@@ -67,7 +68,9 @@
         datosTrabajadores = await response.json();
       }
 
-      const trabajador = datosTrabajadores.find(t => normalizarRUT(t.RUT) === rutBuscado);
+      const trabajador = datosTrabajadores.find(t =>
+        t.RUT && normalizarRUT(t.RUT) === rutBuscado
+      );
 
       if (trabajador) {
         resultadoDiv.innerHTML = `
