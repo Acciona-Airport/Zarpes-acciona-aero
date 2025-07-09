@@ -39,7 +39,7 @@
 
 <h1>Buscar Información de Transporte</h1>
 
-<input type="text" id="rutInput" placeholder="Ingresa RUT (Ej: 123456789)">
+<input type="text" id="rutInput" placeholder="Ingresa RUT (Ej: 20035033-2 o 200350332)">
 <button onclick="buscarRut()">Buscar</button>
 
 <div id="resultado" class="resultado" style="display: none;"></div>
@@ -51,6 +51,14 @@
   function normalizarRUT(rut) {
     if (!rut) return "";
     return rut.replace(/[^0-9kK]/g, '').toLowerCase();
+  }
+
+  function normalizarRUTConGuion(rut) {
+    if (!rut) return "";
+    rut = rut.toLowerCase().replace(/\./g, '').replace(/-/g, '');
+    const cuerpo = rut.slice(0, -1);
+    const dv = rut.slice(-1);
+    return cuerpo + '-' + dv;
   }
 
   async function buscarRut() {
@@ -68,9 +76,11 @@
         datosTrabajadores = await response.json();
       }
 
-      const trabajador = datosTrabajadores.find(t =>
-        t.RUT && normalizarRUT(t.RUT) === rutBuscado
-      );
+      const trabajador = datosTrabajadores.find(t => {
+        if (!t.RUT) return false;
+        const rutNormalizado = normalizarRUT(t.RUT);
+        return rutNormalizado === rutBuscado;
+      });
 
       if (trabajador) {
         resultadoDiv.innerHTML = `
