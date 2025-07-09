@@ -40,18 +40,20 @@
 
 <h1>Buscar Información de Transporte</h1>
 
-<input type="text" id="rutInput" placeholder="Ingresa RUT (sin puntos, con guión)">
+<input type="text" id="rutInput" placeholder="Ingresa RUT (Ej: 123456789)">
 <button onclick="buscarRut()">Buscar</button>
 
 <div id="resultado" class="resultado" style="display: none;"></div>
 
+<!-- PapaParse para leer Google Sheets -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
 <script>
   let datosTrabajadores = [];
 
-  // ID de tu hoja de cálculo (puedes cambiarlo si cambias el link)
   const publicSpreadsheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pub?output=csv';
 
-  // Cargar los datos de Google Sheets
+  // Cargar datos al iniciar
   window.onload = function() {
     Papa.parse(publicSpreadsheetURL, {
       download: true,
@@ -62,13 +64,20 @@
     });
   };
 
+  // Limpiar RUT para hacer comparación flexible
+  function normalizarRUT(rut) {
+    return rut.replace(/[^0-9kK]/g, '').toLowerCase(); // Elimina todo menos números y K
+  }
+
   function buscarRut() {
-    const rut = document.getElementById("rutInput").value.trim();
+    const input = document.getElementById("rutInput").value.trim();
+    const rutBuscado = normalizarRUT(input);
     const resultadoDiv = document.getElementById("resultado");
+
     resultadoDiv.style.display = "none";
     resultadoDiv.innerHTML = "";
 
-    const trabajador = datosTrabajadores.find(t => t.RUT === rut);
+    const trabajador = datosTrabajadores.find(t => normalizarRUT(t.RUT) === rutBuscado);
 
     if (trabajador) {
       resultadoDiv.innerHTML = `
@@ -85,9 +94,6 @@
     }
   }
 </script>
-
-<!-- Incluye PapaParse para leer CSV desde Google Sheets -->
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 </body>
 </html>
