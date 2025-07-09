@@ -1,238 +1,93 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador por RUT</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        .search-container {
-            display: flex;
-            margin-bottom: 20px;
-        }
-        #rutInput {
-            flex: 1;
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 4px 0 0 4px;
-        }
-        #searchButton {
-            padding: 10px 20px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 0 4px 4px 0;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        #searchButton:hover {
-            background-color: #218838;
-        }
-        .results {
-            background-color: white;
-            padding: 20px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: none;
-        }
-        .result-item {
-            margin-bottom: 10px;
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .result-label {
-            font-weight: bold;
-            color: #555;
-        }
-        .error {
-            color: #dc3545;
-            padding: 10px;
-            background-color: #f8d7da;
-            border-radius: 4px;
-            display: none;
-        }
-        .loading {
-            text-align: center;
-            display: none;
-        }
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #09f;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Buscador de Transporte por RUT</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.5.1/tabletop.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2em;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      color: #333;
+    }
+    input {
+      padding: 0.5em;
+      font-size: 16px;
+      width: 300px;
+    }
+    button {
+      padding: 0.5em 1em;
+      font-size: 16px;
+      margin-left: 10px;
+    }
+    .resultado {
+      margin-top: 20px;
+      background: #fff;
+      padding: 1em;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      width: fit-content;
+    }
+    .campo {
+      margin-bottom: 8px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Buscador por RUT</h1>
-    
-    <div class="search-container">
-        <input type="text" id="rutInput" placeholder="Ingrese RUT (ej: 10842102-9)" required>
-        <button id="searchButton">Buscar</button>
-    </div>
-    
-    <div id="errorMessage" class="error"></div>
-    
-    <div id="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Buscando información...</p>
-    </div>
-    
-    <div id="results" class="results">
-        <h2>Resultados:</h2>
-        <div class="result-item">
-            <span class="result-label">RUT:</span> <span id="rutResult"></span>
-        </div>
-        <div class="result-item">
-            <span class="result-label">Nombre:</span> <span id="nombreResult"></span>
-        </div>
-        <div class="result-item">
-            <span class="result-label">Hora término turno:</span> <span id="horaResult"></span>
-        </div>
-    </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchButton = document.getElementById('searchButton');
-            const rutInput = document.getElementById('rutInput');
-            const resultsDiv = document.getElementById('results');
-            const errorDiv = document.getElementById('errorMessage');
-            const loadingDiv = document.getElementById('loading');
-            
-            // URL de tu hoja de cálculo publicada como HTML
-            const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pubhtml?gid=0&single=true';
-            
-            // Variable para almacenar los datos
-            let sheetData = [];
-            
-            // Cargamos los datos al iniciar
-            loadSheetData();
-            
-            function loadSheetData() {
-                loadingDiv.style.display = 'block';
-                
-                // Usamos un proxy CORS para evitar problemas
-                fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(sheetUrl)}`)
-                    .then(response => {
-                        if (!response.ok) throw new Error('Error al cargar los datos');
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Parseamos el HTML
-                        const parser = new DOMParser();
-                        const htmlDoc = parser.parseFromString(data.contents, 'text/html');
-                        const tables = htmlDoc.getElementsByTagName('table');
-                        
-                        if (tables.length === 0) {
-                            throw new Error('No se encontró la tabla de datos');
-                        }
-                        
-                        // Procesamos la tabla
-                        const rows = tables[0].rows;
-                        const headers = Array.from(rows[0].cells).map(cell => cell.textContent.trim());
-                        
-                        // Identificamos las columnas necesarias
-                        const rutIndex = headers.indexOf('RUT');
-                        const nombreIndex = headers.indexOf('NOMBRE');
-                        const horaIndex = headers.indexOf('HORA ESTIMADA TERMINO TURNO');
-                        
-                        if (rutIndex === -1 || nombreIndex === -1 || horaIndex === -1) {
-                            throw new Error('No se encontraron las columnas necesarias');
-                        }
-                        
-                        // Extraemos los datos
-                        sheetData = [];
-                        for (let i = 1; i < rows.length; i++) {
-                            const cells = rows[i].cells;
-                            if (cells.length > Math.max(rutIndex, nombreIndex, horaIndex)) {
-                                sheetData.push({
-                                    rut: cells[rutIndex].textContent.trim(),
-                                    nombre: cells[nombreIndex].textContent.trim(),
-                                    hora: cells[horaIndex].textContent.trim()
-                                });
-                            }
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        showError('Error al cargar los datos. Recarga la página.');
-                    })
-                    .finally(() => {
-                        loadingDiv.style.display = 'none';
-                    });
-            }
-            
-            searchButton.addEventListener('click', searchByRut);
-            rutInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    searchByRut();
-                }
-            });
-            
-            function searchByRut() {
-                const rut = rutInput.value.trim();
-                
-                if (!rut) {
-                    showError('Por favor ingrese un RUT');
-                    return;
-                }
-                
-                if (!/^[0-9]{7,8}-[0-9kK]{1}$/.test(rut)) {
-                    showError('Formato de RUT inválido. Use el formato: 12345678-9');
-                    return;
-                }
-                
-                if (sheetData.length === 0) {
-                    showError('Los datos no se han cargado. Intenta nuevamente.');
-                    return;
-                }
-                
-                loadingDiv.style.display = 'block';
-                resultsDiv.style.display = 'none';
-                errorDiv.style.display = 'none';
-                
-                // Pequeño retraso para mejor experiencia de usuario
-                setTimeout(() => {
-                    const resultado = sheetData.find(item => item.rut === rut);
-                    
-                    if (resultado) {
-                        document.getElementById('rutResult').textContent = resultado.rut;
-                        document.getElementById('nombreResult').textContent = resultado.nombre;
-                        document.getElementById('horaResult').textContent = resultado.hora;
-                        resultsDiv.style.display = 'block';
-                    } else {
-                        showError('No se encontraron resultados para el RUT ingresado');
-                    }
-                    
-                    loadingDiv.style.display = 'none';
-                }, 300);
-            }
-            
-            function showError(message) {
-                errorDiv.textContent = message;
-                errorDiv.style.display = 'block';
-                resultsDiv.style.display = 'none';
-                loadingDiv.style.display = 'none';
-            }
-        });
-    </script>
+<h1>Buscar Información de Transporte</h1>
+
+<input type="text" id="rutInput" placeholder="Ingresa RUT (sin puntos, con guión)">
+<button onclick="buscarRut()">Buscar</button>
+
+<div id="resultado" class="resultado" style="display: none;"></div>
+
+<script>
+  let datosTrabajadores = [];
+
+  // ID de tu hoja de cálculo (puedes cambiarlo si cambias el link)
+  const publicSpreadsheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pub?output=csv';
+
+  // Cargar los datos de Google Sheets
+  window.onload = function() {
+    Papa.parse(publicSpreadsheetURL, {
+      download: true,
+      header: true,
+      complete: function(results) {
+        datosTrabajadores = results.data;
+      }
+    });
+  };
+
+  function buscarRut() {
+    const rut = document.getElementById("rutInput").value.trim();
+    const resultadoDiv = document.getElementById("resultado");
+    resultadoDiv.style.display = "none";
+    resultadoDiv.innerHTML = "";
+
+    const trabajador = datosTrabajadores.find(t => t.RUT === rut);
+
+    if (trabajador) {
+      resultadoDiv.innerHTML = `
+        <div class="campo"><strong>RUT:</strong> ${trabajador.RUT}</div>
+        <div class="campo"><strong>Nombre:</strong> ${trabajador.NOMBRE}</div>
+        <div class="campo"><strong>Sección:</strong> ${trabajador.SECCIÓN}</div>
+        <div class="campo"><strong>Comuna:</strong> ${trabajador.COMUNA}</div>
+        <div class="campo"><strong>Hora Estimada:</strong> ${trabajador["HORA ESTIMADA"]}</div>
+      `;
+      resultadoDiv.style.display = "block";
+    } else {
+      resultadoDiv.innerHTML = `<div class="campo">⚠️ No se encontró ningún trabajador con el RUT ingresado.</div>`;
+      resultadoDiv.style.display = "block";
+    }
+  }
+</script>
+
+<!-- Incluye PapaParse para leer CSV desde Google Sheets -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
 </body>
 </html>
