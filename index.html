@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Buscador de Transporte por RUT</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.5.1/tabletop.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -45,51 +44,47 @@
 
 <div id="resultado" class="resultado" style="display: none;"></div>
 
-<!-- PapaParse para leer Google Sheets -->
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
 <script>
+  const API_URL = "https://script.google.com/a/macros/acciona.aero/s/AKfycbwdvmgPFlauhUQ_8dDccP3cgoCWb28Ai3vwXoMmd5qSQKImJuWlTM61rkNPbmzx4Aod1Q/exec";
   let datosTrabajadores = [];
 
-  const publicSpreadsheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_0RzFKYii2yZoiT-J4d7uL2ddRblWCFTVKI0LweLkFHfpKsUqzFT3MJ9GRErGy4KtqBzPeCd4IkRJ/pub?output=csv';
-
-  // Cargar datos al iniciar
-  window.onload = function() {
-    Papa.parse(publicSpreadsheetURL, {
-      download: true,
-      header: true,
-      complete: function(results) {
-        datosTrabajadores = results.data;
-      }
-    });
-  };
-
-  // Limpiar RUT para hacer comparación flexible
+  // Limpia y normaliza el RUT (sin puntos, sin guión, minúsculas)
   function normalizarRUT(rut) {
-    return rut.replace(/[^0-9kK]/g, '').toLowerCase(); // Elimina todo menos números y K
+    return rut.replace(/[^0-9kK]/g, '').toLowerCase();
   }
 
-  function buscarRut() {
-    const input = document.getElementById("rutInput").value.trim();
-    const rutBuscado = normalizarRUT(input);
+  async function buscarRut() {
+    const rutInput = document.getElementById("rutInput").value.trim();
+    const rutBuscado = normalizarRUT(rutInput);
     const resultadoDiv = document.getElementById("resultado");
-
     resultadoDiv.style.display = "none";
     resultadoDiv.innerHTML = "";
 
-    const trabajador = datosTrabajadores.find(t => normalizarRUT(t.RUT) === rutBuscado);
+    try {
+      if (datosTrabajadores.length === 0) {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error("No se pudo obtener la información");
+        datosTrabajadores = await response.json();
+      }
 
-    if (trabajador) {
-      resultadoDiv.innerHTML = `
-        <div class="campo"><strong>RUT:</strong> ${trabajador.RUT}</div>
-        <div class="campo"><strong>Nombre:</strong> ${trabajador.NOMBRE}</div>
-        <div class="campo"><strong>Sección:</strong> ${trabajador.SECCIÓN}</div>
-        <div class="campo"><strong>Comuna:</strong> ${trabajador.COMUNA}</div>
-        <div class="campo"><strong>Hora Estimada:</strong> ${trabajador["HORA ESTIMADA"]}</div>
-      `;
+      const trabajador = datosTrabajadores.find(t => normalizarRUT(t.RUT) === rutBuscado);
+
+      if (trabajador) {
+        resultadoDiv.innerHTML = `
+          <div class="campo"><strong>RUT:</strong> ${trabajador.RUT}</div>
+          <div class="campo"><strong>Nombre:</strong> ${trabajador.NOMBRE}</div>
+          <div class="campo"><strong>Sección:</strong> ${trabajador.SECCIÓN}</div>
+          <div class="campo"><strong>Comuna:</strong> ${trabajador.COMUNA}</div>
+          <div class="campo"><strong>Hora Estimada:</strong> ${trabajador["HORA ESTIMADA"]}</div>
+        `;
+      } else {
+        resultadoDiv.innerHTML = `<div class="campo">⚠️ No se encontró ningún trabajador con el RUT ingresado.</div>`;
+      }
+
       resultadoDiv.style.display = "block";
-    } else {
-      resultadoDiv.innerHTML = `<div class="campo">⚠️ No se encontró ningún trabajador con el RUT ingresado.</div>`;
+
+    } catch (error) {
+      resultadoDiv.innerHTML = `<div class="campo">❌ Error al consultar los datos: ${error.message}</div>`;
       resultadoDiv.style.display = "block";
     }
   }
