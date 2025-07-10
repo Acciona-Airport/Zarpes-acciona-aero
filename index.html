@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Consulta Zarpes Acciona</title>
   <style>
     body {
@@ -15,9 +15,8 @@
       padding: 20px;
     }
 
-    .logo-accciona {
-      width: 150px;
-      border-radius: 8px;
+    .logo-superior {
+      width: 140px;
       margin-bottom: 10px;
     }
 
@@ -53,7 +52,7 @@
     }
 
     .input-group input::placeholder {
-      font-size: 12px;
+      font-size: 11px;
       color: #888;
     }
 
@@ -90,15 +89,16 @@
   </style>
 </head>
 <body>
-  <!-- Logo Acciona -->
-  <img class="logo-accciona" src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoAcciona.png" alt="Logo Acciona" />
+
+  <!-- Logo Acciona superior actualizado -->
+  <img src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoAcciona2.png" alt="Logo Acciona" class="logo-superior" />
 
   <h1>Consulta Zarpes Acciona</h1>
 
-  <!-- Input con icono personalizado -->
   <div class="input-group">
+    <!-- Icono a la izquierda del campo -->
     <img src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoPersonal.svg" alt="Icono RUT" />
-    <input type="text" id="rut" placeholder="Ingresa tu RUT sin puntos. Ej: 12345678-9" />
+    <input type="text" id="rut" placeholder="Ingresa tu RUT sin puntos y con guion Ej: 12345678-9" />
   </div>
 
   <button onclick="buscar()">Buscar</button>
@@ -164,5 +164,6 @@
       }
     }
   </script>
+
 </body>
 </html>
