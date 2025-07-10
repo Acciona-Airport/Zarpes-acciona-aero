@@ -15,10 +15,19 @@
       padding: 20px;
     }
 
+    .logo-container {
+      margin-bottom: 10px;
+    }
+
+    .logo-container img {
+      height: 40px;
+    }
+
     h1 {
-      font-size: 22px;
+      font-size: 20px;
       color: #c80000;
-      margin: 5px 0 20px 0;
+      margin: 5px 0 15px 0;
+      text-align: center;
     }
 
     .input-group {
@@ -27,13 +36,13 @@
       border: 1px solid #ccc;
       border-radius: 8px;
       overflow: hidden;
-      width: 300px;
+      width: 280px;
       background-color: #fff;
     }
 
     .input-group img {
-      width: 30px;
-      height: 30px;
+      width: 26px;
+      height: 26px;
       padding: 4px;
       background-color: #fff;
     }
@@ -41,13 +50,13 @@
     .input-group input {
       border: none;
       outline: none;
-      padding: 10px;
-      font-size: 14px;
+      padding: 8px;
+      font-size: 13px;
       flex: 1;
     }
 
     .input-group input::placeholder {
-      font-size: 12px;
+      font-size: 11px;
       color: #888;
     }
 
@@ -85,11 +94,18 @@
 </head>
 <body>
 
+  <!-- LOGO PRINCIPAL -->
+  <div class="logo-container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Acciona_logo.svg" alt="Logo Acciona" />
+  </div>
+
+  <!-- TÍTULO -->
   <h1>Consulta Zarpes Acciona</h1>
 
+  <!-- CUADRO DE BÚSQUEDA -->
   <div class="input-group">
     <img src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoPersonal.svg" alt="Icono RUT" />
-    <input type="text" id="rut" placeholder="Ingresa tu RUT sin puntos. Ej: 12345678-9" />
+    <input type="text" id="rut" placeholder="Ingresa tu RUT sin puntos y con guion Ej: 12345678-9" />
   </div>
 
   <button onclick="buscar()">Buscar</button>
