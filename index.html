@@ -2,98 +2,81 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Consulta Zarpes Acciona</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #fff;
+      background-color: white;
+      color: #000;
       margin: 0;
-      padding: 0;
+      padding: 20px;
     }
 
     header {
       display: flex;
       align-items: center;
-      background-color: #d1001f;
-      padding: 10px 20px;
-      color: white;
+      margin-bottom: 30px;
     }
 
     header img {
-      height: 50px;
-      border-radius: 10px;
-      margin-right: 15px;
+      height: 60px;
+      border-radius: 12px;
+      margin-right: 20px;
     }
 
-    header h1 {
-      font-size: 20px;
-      margin: 0;
-    }
-
-    .container {
-      max-width: 600px;
-      margin: 30px auto;
-      padding: 20px;
-      background-color: #fff;
-      border-radius: 15px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-
-    .buscador {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+    h1 {
+      color: #d1001c;
     }
 
     input[type="text"] {
-      flex: 1;
       padding: 10px;
+      width: 250px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
       font-size: 16px;
-      border: 2px solid #d1001f;
-      border-radius: 10px;
     }
 
     button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #d1001f;
+      padding: 10px 15px;
+      background-color: #d1001c;
       color: white;
       border: none;
-      border-radius: 10px;
+      border-radius: 6px;
       cursor: pointer;
+      font-size: 16px;
+      margin-left: 5px;
     }
 
     button:hover {
-      background-color: #b0001a;
+      background-color: #b00018;
     }
 
-    .resultado {
+    #resultado {
+      margin-top: 20px;
+      padding: 20px;
       border: 1px solid #ccc;
-      padding: 15px;
       border-radius: 10px;
-      background-color: #f9f9f9;
+      max-width: 400px;
+      background-color: #fff5f5;
     }
 
-    .error {
-      color: red;
+    .label {
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
   <header>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Acciona_logo.svg/330px-Acciona_logo.svg.png" alt="Logo Acciona">
+    <img src="LogoAcciona.png" alt="Logo Acciona" />
     <h1>Consulta Zarpes Acciona</h1>
   </header>
 
-  <div class="container">
-    <div class="buscador">
-      <input type="text" id="rutInput" placeholder="Ingresa tu RUT sin puntos y con guion">
-      <button onclick="buscarRut()">Buscar</button>
-    </div>
-    <div id="resultado" class="resultado"></div>
-  </div>
+  <input type="text" id="rutInput" placeholder="Ingresa tu RUT sin puntos y con guion" />
+  <button onclick="buscarRut()">Buscar</button>
+
+  <div id="resultado"></div>
 
   <script>
     async function buscarRut() {
@@ -105,41 +88,41 @@
         const response = await fetch("https://script.google.com/macros/s/AKfycbzefe-5qo2uc2jjy5vEGcy6RBPp9Xw4UL-XAa7UPNPAb6eBjsqBjs8_anw3oTck_92BGA/exec");
         const data = await response.json();
 
-        const normalizarRut = rut.replace(/[.\s]/g, "").toUpperCase();
+        const rutNormalizado = rut.replace(/\./g, '').toLowerCase();
 
-        const trabajador = data.find(t => {
-          if (typeof t.RUT === "number") {
-            return String(t.RUT).includes(normalizarRut.replace("-", ""));
-          } else {
-            return t.RUT.replace(/[.\s]/g, "").toUpperCase() === normalizarRut;
-          }
+        const persona = data.find(p => {
+          const rutData = String(p.RUT || '').replace(/\./g, '').toLowerCase();
+          return rutData === rutNormalizado;
         });
 
-        if (trabajador) {
+        if (persona) {
           resultadoDiv.innerHTML = `
-            <strong>RUT:</strong> ${trabajador.RUT} <br>
-            <strong>Nombre:</strong> ${trabajador.NOMBRE} <br>
-            <strong>Sección:</strong> ${trabajador["SECCIÓN"]} <br>
-            <strong>Comuna:</strong> ${trabajador.COMUNA} <br>
-            <strong>Hora Estimada:</strong> ${formatearHora(trabajador["HORA ESTIMADA TERMINO TURNO"])}
+            <div><span class="label">RUT:</span> ${persona.RUT}</div>
+            <div><span class="label">Nombre:</span> ${persona.NOMBRE}</div>
+            <div><span class="label">Sección:</span> ${persona["SECCIÓN"]}</div>
+            <div><span class="label">Comuna:</span> ${persona.COMUNA}</div>
+            <div><span class="label">Hora Estimada:</span> ${formatearHora(persona["HORA ESTIMADA TERMINO TURNO"])}</div>
           `;
         } else {
-          resultadoDiv.innerHTML = `<span class="error">No se encontró ningún trabajador con el RUT ingresado.</span>`;
+          resultadoDiv.innerHTML = "❌ No se encontró ningún colaborador con ese RUT.";
         }
       } catch (error) {
         console.error("Error al consultar los datos:", error);
-        resultadoDiv.innerHTML = `<span class="error">❌ Error al consultar los datos.</span>`;
+        resultadoDiv.innerHTML = "❌ Error al consultar los datos.";
       }
     }
 
-    function formatearHora(fechaISO) {
-      if (!fechaISO) return "";
-      const fecha = new Date(fechaISO);
-      const horas = fecha.getHours().toString().padStart(2, "0");
-      const minutos = fecha.getMinutes().toString().padStart(2, "0");
-      return `${horas}:${minutos}`;
+    function formatearHora(horaISO) {
+      if (!horaISO) return "No disponible";
+      try {
+        const date = new Date(horaISO);
+        const horas = date.getHours().toString().padStart(2, '0');
+        const minutos = date.getMinutes().toString().padStart(2, '0');
+        return `${horas}:${minutos}`;
+      } catch {
+        return horaISO;
+      }
     }
   </script>
-
 </body>
 </html>
