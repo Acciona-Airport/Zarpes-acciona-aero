@@ -86,22 +86,30 @@
       text-align: center;
       max-width: 320px;
     }
+
+    #loading {
+      font-size: 12px;
+      color: #888;
+      margin-top: 10px;
+      display: none;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Logo Acciona superior actualizado -->
+  <!-- Logo superior -->
   <img src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoAcciona2.png" alt="Logo Acciona" class="logo-superior" />
 
   <h1>Consulta Zarpes Acciona</h1>
 
   <div class="input-group">
-    <!-- Icono a la izquierda del campo -->
     <img src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoPersonal.svg" alt="Icono RUT" />
     <input type="text" id="rut" placeholder="Ingresa tu RUT sin puntos y con guion Ej: 12345678-9" />
   </div>
 
   <button onclick="buscar()">Buscar</button>
+
+  <div id="loading">⏳ Cargando...</div>
 
   <div class="leyenda">
     En caso que se haya prolongado puede existir diferencia de horario, llame a la oficina Realtime en caso de dudas.
@@ -113,8 +121,13 @@
     async function buscar() {
       const rut = document.getElementById("rut").value.trim();
       const resultado = document.getElementById("resultado");
+      const loading = document.getElementById("loading");
+
+      resultado.style.display = "none";
+      loading.style.display = "block";
 
       if (!rut) {
+        loading.style.display = "none";
         resultado.style.display = "block";
         resultado.innerHTML = "⚠️ Ingresa un RUT válido.";
         return;
@@ -135,8 +148,10 @@
           return false;
         });
 
+        loading.style.display = "none";
+        resultado.style.display = "block";
+
         if (encontrado) {
-          resultado.style.display = "block";
           resultado.innerHTML = `
             <strong>RUT:</strong> ${encontrado.RUT}<br>
             <strong>Nombre:</strong> ${encontrado.NOMBRE}<br>
@@ -145,10 +160,10 @@
             <strong>Hora Estimada:</strong> ${formatearHora(encontrado["HORA ESTIMADA TERMINO TURNO"])}
           `;
         } else {
-          resultado.style.display = "block";
           resultado.innerHTML = "❌ No se encontró ningún trabajador con ese RUT.";
         }
       } catch (error) {
+        loading.style.display = "none";
         resultado.style.display = "block";
         resultado.innerHTML = "❌ Error al consultar los datos.";
         console.error(error);
