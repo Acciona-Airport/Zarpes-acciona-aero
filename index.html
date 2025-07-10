@@ -16,7 +16,7 @@
     header {
       display: flex;
       align-items: center;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
 
     header img {
@@ -27,6 +27,8 @@
 
     h1 {
       color: #d1001c;
+      font-size: 22px;
+      margin: 0;
     }
 
     input[type="text"] {
@@ -52,6 +54,13 @@
       background-color: #b00018;
     }
 
+    .leyenda {
+      font-size: 12px;
+      color: #333;
+      margin-top: 8px;
+      max-width: 500px;
+    }
+
     #resultado {
       margin-top: 20px;
       padding: 20px;
@@ -75,6 +84,10 @@
 
   <input type="text" id="rutInput" placeholder="Ingresa tu RUT sin puntos y con guion" />
   <button onclick="buscarRut()">Buscar</button>
+
+  <div class="leyenda">
+    En caso que se haya prolongado puede existir diferencia de horario, llame a la oficina Realtime en caso de dudas.
+  </div>
 
   <div id="resultado"></div>
 
