@@ -8,157 +8,165 @@
     body {
       font-family: Arial, sans-serif;
       background-color: #fff;
-      margin: 0;
-      padding: 20px;
       color: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
     }
 
-    header {
+    .logo-container {
       display: flex;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
 
-    header img {
+    .logo-container img {
       height: 50px;
-      margin-right: 15px;
     }
 
     h1 {
       font-size: 22px;
-      color: #d50000;
-      margin: 0;
+      color: #c80000;
+      margin: 5px 0 20px 0;
     }
 
-    .input-container {
+    .input-group {
       display: flex;
       align-items: center;
       border: 1px solid #ccc;
-      border-radius: 6px;
+      border-radius: 8px;
       overflow: hidden;
-      width: 280px;
-      background-color: #f5f5f5;
-      margin-bottom: 10px;
+      width: 300px;
+      background-color: #fff;
     }
 
-    .input-icon {
-      background-color: #eee;
-      padding: 6px;
-      height: 28px;
-      width: 28px;
-      object-fit: contain;
-      margin-left: 6px;
+    .input-group img {
+      width: 34px;
+      height: 34px;
+      padding: 4px;
+      margin: 0;
+      background-color: #fff;
     }
 
-    input[type="text"] {
+    .input-group input {
       border: none;
       outline: none;
       padding: 10px;
       font-size: 14px;
-      width: 100%;
-      background: white;
+      flex: 1;
     }
 
-    input::placeholder {
+    .input-group input::placeholder {
       font-size: 12px;
       color: #888;
     }
 
     button {
-      background-color: #d50000;
-      color: white;
+      margin-top: 10px;
+      padding: 8px 16px;
+      background-color: #c80000;
+      color: #fff;
       border: none;
-      padding: 10px 16px;
       border-radius: 6px;
-      font-size: 14px;
       cursor: pointer;
     }
 
-    .result {
+    button:hover {
+      background-color: #a00000;
+    }
+
+    .resultado {
       margin-top: 20px;
-      padding: 15px;
+      border: 1px solid #ddd;
+      padding: 10px;
       border-radius: 8px;
       background-color: #f9f9f9;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      width: fit-content;
+      width: 300px;
     }
 
-    .small-note {
+    .leyenda {
       font-size: 12px;
-      margin-top: 10px;
-      color: #444;
-      max-width: 400px;
-    }
-
-    .error {
-      color: red;
+      color: #555;
+      margin-top: 12px;
+      text-align: center;
+      max-width: 320px;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <img src="LogoAcciona.png" alt="Acciona Logo">
-    <h1>Consulta Zarpes Acciona</h1>
-  </header>
-
-  <div class="input-container">
-    <img src="LogoPersonal.svg" alt="Icono RUT" class="input-icon" />
-    <input type="text" id="rutInput" placeholder="Ingresa RUT sin puntos. Ej: 12345678-9" />
+  <div class="logo-container">
+    <img src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoPersonal.svg" alt="Logo Acciona" />
   </div>
-  <button onclick="buscarRut()">Buscar</button>
 
-  <div class="small-note">
+  <h1>Consulta Zarpes Acciona</h1>
+
+  <div class="input-group">
+    <img src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoPersonal.svg" alt="Icono RUT" />
+    <input type="text" id="rut" placeholder="Ingresa tu RUT sin puntos. Ej: 12345678-9" />
+  </div>
+
+  <button onclick="buscar()">Buscar</button>
+
+  <div class="leyenda">
     En caso que se haya prolongado puede existir diferencia de horario, llame a la oficina Realtime en caso de dudas.
   </div>
 
-  <div id="resultado" class="result"></div>
+  <div id="resultado" class="resultado" style="display:none;"></div>
 
   <script>
-    async function buscarRut() {
-      const input = document.getElementById('rutInput').value.trim();
-      const rut = input.replace(/\./g, '').toUpperCase();
+    async function buscar() {
+      const rut = document.getElementById("rut").value.trim();
+      const resultado = document.getElementById("resultado");
 
-      const resultado = document.getElementById('resultado');
-      resultado.innerHTML = "⏳ Buscando...";
+      if (!rut) {
+        resultado.style.display = "block";
+        resultado.innerHTML = "⚠️ Ingresa un RUT válido.";
+        return;
+      }
 
       try {
-        const res = await fetch("https://script.google.com/macros/s/AKfycbzefe-5qo2uc2jjy5vEGcy6RBPp9Xw4UL-XAa7UPNPAb6eBjsqBjs8_anw3oTck_92BGA/exec");
-        const data = await res.json();
+        const response = await fetch(
+          "https://script.google.com/macros/s/AKfycbzefe-5qo2uc2jjy5vEGcy6RBPp9Xw4UL-XAa7UPNPAb6eBjsqBjs8_anw3oTck_92BGA/exec"
+        );
+        const data = await response.json();
 
-        const coincidencias = data.filter(item => {
-          if (!item.RUT) return false;
-          const rutItem = item.RUT.toString().replace(/\./g, '').toUpperCase();
-          return rutItem.includes(rut);
+        const encontrado = data.find(item => {
+          if (typeof item.RUT === "string") {
+            return item.RUT.replace(/\./g, "").toLowerCase() === rut.toLowerCase();
+          } else if (typeof item.RUT === "number") {
+            return String(item.RUT).includes(rut.replace("-", ""));
+          }
+          return false;
         });
 
-        if (coincidencias.length > 0) {
-          resultado.innerHTML = coincidencias.map(persona => `
-            <div>
-              <strong>RUT:</strong> ${persona.RUT}<br>
-              <strong>Nombre:</strong> ${persona.NOMBRE}<br>
-              <strong>Sección:</strong> ${persona["SECCIÓN"]}<br>
-              <strong>Comuna:</strong> ${persona.COMUNA}<br>
-              <strong>Hora Estimada:</strong> ${formatearHora(persona["HORA ESTIMADA TERMINO TURNO"])}
-            </div>
-          `).join("<hr>");
+        if (encontrado) {
+          resultado.style.display = "block";
+          resultado.innerHTML = `
+            <strong>RUT:</strong> ${encontrado.RUT}<br>
+            <strong>Nombre:</strong> ${encontrado.NOMBRE}<br>
+            <strong>Sección:</strong> ${encontrado["SECCIÓN"]}<br>
+            <strong>Comuna:</strong> ${encontrado.COMUNA}<br>
+            <strong>Hora Estimada:</strong> ${formatearHora(encontrado["HORA ESTIMADA TERMINO TURNO"])}
+          `;
         } else {
-          resultado.innerHTML = "<span class='error'>⚠️ No se encontró ningún trabajador con el RUT ingresado.</span>";
+          resultado.style.display = "block";
+          resultado.innerHTML = "❌ No se encontró ningún trabajador con ese RUT.";
         }
-      } catch (err) {
-        resultado.innerHTML = "<span class='error'>❌ Error al consultar los datos. Intente más tarde.</span>";
-        console.error(err);
+      } catch (error) {
+        resultado.style.display = "block";
+        resultado.innerHTML = "❌ Error al consultar los datos.";
+        console.error(error);
       }
     }
 
-    function formatearHora(horaISO) {
+    function formatearHora(horaStr) {
       try {
-        const fecha = new Date(horaISO);
-        const horas = fecha.getHours().toString().padStart(2, '0');
-        const minutos = fecha.getMinutes().toString().padStart(2, '0');
-        return `${horas}:${minutos}`;
+        const date = new Date(horaStr);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       } catch {
-        return horaISO;
+        return horaStr;
       }
     }
   </script>
