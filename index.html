@@ -24,6 +24,7 @@
       max-width: 360px;
       width: 100%;
       border: 1px solid #f0c0c0;
+      transition: all 0.4s ease;
     }
 
     .logo-container {
@@ -33,6 +34,11 @@
 
     .logo {
       height: 60px;
+      transition: transform 0.4s ease;
+    }
+
+    .logo:hover {
+      transform: scale(1.05);
     }
 
     h1 {
@@ -50,6 +56,11 @@
       overflow: hidden;
       background-color: #fff0f0;
       margin-bottom: 10px;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .input-group:focus-within {
+      box-shadow: 0 0 0 2px #c80000aa;
     }
 
     .input-group img {
@@ -81,6 +92,7 @@
       cursor: pointer;
       width: 100%;
       font-size: 15px;
+      transition: background-color 0.3s ease, transform 0.2s ease;
     }
 
     button:disabled {
@@ -90,6 +102,7 @@
 
     button:hover:enabled {
       background-color: #a00000;
+      transform: scale(1.02);
     }
 
     .verificacion {
@@ -105,6 +118,11 @@
       border-radius: 6px;
       cursor: pointer;
       font-size: 14px;
+      transition: background-color 0.3s ease;
+    }
+
+    .verificacion button:hover {
+      background-color: #f7f7f7;
     }
 
     .cargando {
@@ -146,6 +164,14 @@
       background-color: #fffafa;
       color: #000;
       font-size: 14px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .resultado.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .leyenda {
@@ -219,12 +245,14 @@
       const cargando = document.getElementById("cargando");
 
       resultado.style.display = "none";
+      resultado.classList.remove("visible");
       cargando.style.display = "block";
 
       if (!rut) {
         cargando.style.display = "none";
         resultado.style.display = "block";
         resultado.innerHTML = "⚠️ Ingresa un RUT válido.";
+        resultado.classList.add("visible");
         return;
       }
 
@@ -245,6 +273,7 @@
 
         cargando.style.display = "none";
         resultado.style.display = "block";
+        resultado.classList.add("visible");
 
         if (encontrado) {
           resultado.innerHTML = `
@@ -260,6 +289,7 @@
       } catch (error) {
         cargando.style.display = "none";
         resultado.style.display = "block";
+        resultado.classList.add("visible");
         resultado.innerHTML = "❌ Error al consultar los datos.";
         console.error(error);
       }
