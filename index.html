@@ -15,15 +15,11 @@
       padding: 20px;
     }
 
-    .logo-superior {
-      width: 140px;
-      margin-bottom: 10px;
-    }
-
     h1 {
-      font-size: 22px;
+      font-size: 20px;
       color: #c80000;
       margin: 5px 0 20px 0;
+      text-align: center;
     }
 
     .input-group {
@@ -34,20 +30,20 @@
       overflow: hidden;
       width: 300px;
       background-color: #fff;
+      padding-left: 6px;
     }
 
     .input-group img {
-      width: 30px;
-      height: 30px;
-      padding: 4px;
-      background-color: #fff;
+      width: 28px;
+      height: 28px;
+      margin-right: 5px;
     }
 
     .input-group input {
       border: none;
       outline: none;
       padding: 10px;
-      font-size: 14px;
+      font-size: 13px;
       flex: 1;
     }
 
@@ -64,6 +60,7 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 14px;
     }
 
     button:hover {
@@ -77,6 +74,7 @@
       border-radius: 8px;
       background-color: #f9f9f9;
       width: 300px;
+      font-size: 14px;
     }
 
     .leyenda {
@@ -87,18 +85,40 @@
       max-width: 320px;
     }
 
-    #loading {
-      font-size: 12px;
-      color: #888;
-      margin-top: 10px;
+    .logo-top {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .logo-top img {
+      height: 40px;
+    }
+
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #c80000;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      animation: spin 1s linear infinite;
+      margin: 10px auto;
       display: none;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
 
-  <!-- Logo superior -->
-  <img src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoAcciona2.png" alt="Logo Acciona" class="logo-superior" />
+  <div class="logo-top">
+    <img src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoAcciona2.png" alt="Logo Acciona">
+  </div>
 
   <h1>Consulta Zarpes Acciona</h1>
 
@@ -109,7 +129,7 @@
 
   <button onclick="buscar()">Buscar</button>
 
-  <div id="loading">⏳ Cargando...</div>
+  <div class="loader" id="loader"></div>
 
   <div class="leyenda">
     En caso que se haya prolongado puede existir diferencia de horario, llame a la oficina Realtime en caso de dudas.
@@ -121,13 +141,13 @@
     async function buscar() {
       const rut = document.getElementById("rut").value.trim();
       const resultado = document.getElementById("resultado");
-      const loading = document.getElementById("loading");
+      const loader = document.getElementById("loader");
 
       resultado.style.display = "none";
-      loading.style.display = "block";
+      loader.style.display = "block";
 
       if (!rut) {
-        loading.style.display = "none";
+        loader.style.display = "none";
         resultado.style.display = "block";
         resultado.innerHTML = "⚠️ Ingresa un RUT válido.";
         return;
@@ -148,10 +168,10 @@
           return false;
         });
 
-        loading.style.display = "none";
-        resultado.style.display = "block";
+        loader.style.display = "none";
 
         if (encontrado) {
+          resultado.style.display = "block";
           resultado.innerHTML = `
             <strong>RUT:</strong> ${encontrado.RUT}<br>
             <strong>Nombre:</strong> ${encontrado.NOMBRE}<br>
@@ -160,10 +180,11 @@
             <strong>Hora Estimada:</strong> ${formatearHora(encontrado["HORA ESTIMADA TERMINO TURNO"])}
           `;
         } else {
+          resultado.style.display = "block";
           resultado.innerHTML = "❌ No se encontró ningún trabajador con ese RUT.";
         }
       } catch (error) {
-        loading.style.display = "none";
+        loader.style.display = "none";
         resultado.style.display = "block";
         resultado.innerHTML = "❌ Error al consultar los datos.";
         console.error(error);
@@ -173,7 +194,7 @@
     function formatearHora(horaStr) {
       try {
         const date = new Date(horaStr);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
       } catch {
         return horaStr;
       }
