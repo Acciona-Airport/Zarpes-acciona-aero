@@ -7,47 +7,55 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #fff;
+      background-color: #fff5f5;
       color: #000;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px;
+      padding: 30px 15px;
       margin: 0;
     }
 
+    .container {
+      background-color: #ffffff;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(200, 0, 0, 0.1);
+      max-width: 360px;
+      width: 100%;
+      border: 1px solid #f0c0c0;
+    }
+
     .logo-container {
-      align-self: flex-start;
-      margin-left: calc(50% - 165px);
+      text-align: center;
+      margin-bottom: 20px;
     }
 
     .logo {
       height: 60px;
-      margin-bottom: 10px;
     }
 
     h1 {
-      font-size: 16px;
+      font-size: 18px;
       color: #c80000;
-      margin: 5px 0 20px 0;
       text-align: center;
+      margin: 10px 0 20px 0;
     }
 
     .input-group {
       display: flex;
       align-items: center;
-      border: 1px solid #ccc;
+      border: 1px solid #e0b3b3;
       border-radius: 8px;
       overflow: hidden;
-      width: 300px;
-      background-color: #fff;
+      background-color: #fff0f0;
+      margin-bottom: 10px;
     }
 
     .input-group img {
       width: 30px;
       height: 30px;
       padding: 4px;
-      background-color: #fff;
     }
 
     .input-group input {
@@ -56,48 +64,54 @@
       padding: 10px;
       font-size: 14px;
       flex: 1;
+      background-color: transparent;
     }
 
     .input-group input::placeholder {
-      font-size: 11px;
-      color: #888;
+      font-size: 12px;
+      color: #999;
     }
 
     button {
-      margin-top: 10px;
-      padding: 8px 16px;
+      padding: 10px 20px;
       background-color: #c80000;
       color: #fff;
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      width: 100%;
+      font-size: 15px;
     }
 
-    button:hover {
+    button:disabled {
+      background-color: #e5a5a5;
+      cursor: not-allowed;
+    }
+
+    button:hover:enabled {
       background-color: #a00000;
     }
 
-    .resultado {
-      margin-top: 20px;
-      border: 1px solid #ddd;
-      padding: 10px;
-      border-radius: 8px;
-      background-color: #f9f9f9;
-      width: 300px;
-    }
-
-    .leyenda {
-      font-size: 12px;
-      color: #555;
+    .verificacion {
       margin-top: 12px;
       text-align: center;
-      max-width: 320px;
+    }
+
+    .verificacion button {
+      background-color: #fff;
+      color: #000;
+      border: 1px solid #aaa;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
     }
 
     .cargando {
       margin-top: 15px;
       font-size: 14px;
       color: #333;
+      text-align: center;
     }
 
     .spinner {
@@ -124,6 +138,27 @@
       vertical-align: middle;
     }
 
+    .resultado {
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      padding: 12px;
+      border-radius: 10px;
+      background-color: #fffafa;
+      color: #000;
+      font-size: 14px;
+    }
+
+    .leyenda {
+      font-size: 11px;
+      color: #555;
+      margin-top: 18px;
+      text-align: center;
+      background-color: #ffecec;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px dashed #e0a0a0;
+    }
+
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -132,35 +167,35 @@
 </head>
 <body>
 
-  <div class="logo-container">
-    <img class="logo" src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoAcciona2.png" alt="Logo Acciona" />
+  <div class="container">
+    <div class="logo-container">
+      <img class="logo" src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoAcciona2.png" alt="Logo Acciona" />
+    </div>
+
+    <h1>Consulta Zarpes Acciona</h1>
+
+    <div class="input-group">
+      <img src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoPersonal.svg" alt="Icono RUT" />
+      <input type="text" id="rut" placeholder="Ingrese su RUT sin puntos y sin guion." />
+    </div>
+
+    <button id="btnBuscar" onclick="buscar()" disabled>🔍 Buscar</button>
+
+    <div class="verificacion">
+      <button id="btnVerificar" onclick="verificar()">🔲 No soy un robot.</button>
+      <div id="msgVerificado" style="color: green; font-size: 12px; margin-top: 6px;"></div>
+    </div>
+
+    <div id="cargando" class="cargando" style="display:none;">
+      <span class="spinner"></span>Cargando información...
+    </div>
+
+    <div id="resultado" class="resultado" style="display:none;"></div>
+
+    <div class="leyenda">
+      Esta herramienta está diseñada exclusivamente para revisar si está considerado el movil al término de su turno. En caso de que se haya prolongado, puede existir una diferencia de horario. Si tiene dudas, comuníquese con su supervisor o la oficina de Realtime.
+    </div>
   </div>
-
-  <h1>Consulta Zarpes Acciona</h1>
-
-  <div class="input-group">
-    <img src="https://raw.githubusercontent.com/acciona-airport/Zarpes-acciona-aero/main/LogoPersonal.svg" alt="Icono RUT" />
-    <input type="text" id="rut" placeholder="Ingrese su RUT sin puntos y sin guion." />
-  </div>
-
-  <button id="btnBuscar" onclick="buscar()" disabled>🔍 Buscar</button>
-
-  <div id="verificacion" style="margin-top: 10px;">
-    <button id="btnVerificar" onclick="verificar()" style="padding: 6px 12px; background-color: #f0f0f0; color: #000; border: 1px solid #aaa; border-radius: 4px; cursor: pointer;">
-      🔲 No soy un robot.
-    </button>
-    <div id="msgVerificado" style="color: green; font-size: 12px; margin-top: 6px;"></div>
-  </div>
-
-  <div id="cargando" class="cargando" style="display:none;">
-    <span class="spinner"></span>Cargando información...
-  </div>
-
-  <div class="leyenda">
-    Esta herramienta está diseñada exclusivamente para revisar si está considerado el movil al término de su turno. En caso de que se haya prolongado, puede existir una diferencia de horario, si tiene dudas, llame a la oficina de "Realtime" o a su "Supervisor".
-  </div>
-
-  <div id="resultado" class="resultado" style="display:none;"></div>
 
   <script>
     function verificar() {
