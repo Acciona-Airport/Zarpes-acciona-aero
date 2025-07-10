@@ -18,7 +18,7 @@
 
     .logo-container {
       align-self: flex-start;
-      margin-left: calc(50% - 165px); /* Ajuste para centrar visualmente hacia la izquierda */
+      margin-left: calc(50% - 165px);
     }
 
     .logo {
@@ -131,7 +131,14 @@
     <input type="text" id="rut" placeholder="Ingrese su RUT sin puntos y sin guion." />
   </div>
 
-  <button onclick="buscar()">Buscar</button>
+  <button id="btnBuscar" onclick="buscar()" disabled>Buscar</button>
+
+  <div id="verificacion" style="margin-top: 10px;">
+    <button id="btnVerificar" onclick="verificar()" style="padding: 6px 12px; background-color: #f0f0f0; border: 1px solid #aaa; border-radius: 4px; cursor: pointer;">
+      ✅ No soy un robot
+    </button>
+    <div id="msgVerificado" style="color: green; font-size: 12px; margin-top: 6px;"></div>
+  </div>
 
   <div id="cargando" class="cargando" style="display:none;">
     <span class="spinner"></span>Cargando información...
@@ -144,6 +151,12 @@
   <div id="resultado" class="resultado" style="display:none;"></div>
 
   <script>
+    function verificar() {
+      document.getElementById("btnBuscar").disabled = false;
+      document.getElementById("btnVerificar").disabled = true;
+      document.getElementById("msgVerificado").innerText = "✔️ Verificado. Puedes buscar ahora.";
+    }
+
     async function buscar() {
       const rut = document.getElementById("rut").value.trim();
       const resultado = document.getElementById("resultado");
