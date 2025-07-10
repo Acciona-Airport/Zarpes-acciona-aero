@@ -112,6 +112,18 @@
       vertical-align: middle;
     }
 
+    .spinner-check {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #007700;
+      border-radius: 50%;
+      width: 14px;
+      height: 14px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -152,9 +164,18 @@
 
   <script>
     function verificar() {
-      document.getElementById("btnBuscar").disabled = false;
-      document.getElementById("btnVerificar").disabled = true;
-      document.getElementById("msgVerificado").innerText = "✔️ Verificado. Puedes buscar ahora.";
+      const btn = document.getElementById("btnVerificar");
+      const msg = document.getElementById("msgVerificado");
+      const btnBuscar = document.getElementById("btnBuscar");
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-check"></span> Verificando...';
+
+      setTimeout(() => {
+        btn.style.display = "none";
+        btnBuscar.disabled = false;
+        msg.innerText = "✔️ Verificado. Puedes buscar ahora.";
+      }, 1000);
     }
 
     async function buscar() {
